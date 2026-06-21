@@ -1,0 +1,15 @@
+{
+  "name": "@easydocument/shared-types",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "test": "echo \"No shared-types tests yet\""
+  },
+  "devDependencies": {
+    "typescript": "^5.6.2",
+    "eslint": "^9.11.1"
+  }
+}

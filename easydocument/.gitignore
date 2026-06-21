@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+.npm/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+coverage/
+.turbo/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+apps/mobile/build/
+apps/mobile/.metadata
+apps/mobile/pubspec.lock
+
+# IDE and OS
+.idea/
+.vscode/
+.DS_Store

@@ -1,0 +1,204 @@
+openapi: 3.0.3
+info:
+  title: EasyDocument API
+  version: 1.0.0
+  description: API contract for the EasyDocument Nepal document-agent platform.
+servers:
+  - url: https://api.easydocument.local/v1
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ApiError:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details: { type: object }
+    SendOtpRequest:
+      type: object
+      required: [phoneNumber, purpose]
+      properties:
+        phoneNumber: { type: string, example: "+9779800000000" }
+        purpose: { type: string, enum: [REGISTER, LOGIN, RESET] }
+    VerifyOtpRequest:
+      type: object
+      required: [phoneNumber, otp]
+      properties:
+        phoneNumber: { type: string }
+        otp: { type: string }
+    AuthResponse:
+      type: object
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        user:
+          type: object
+    CreateTaskRequest:
+      type: object
+      required: [documentName, organizationName, description]
+      properties:
+        documentName: { type: string, example: "Passport Renewal" }
+        organizationName: { type: string, example: "Department of Passports" }
+        organizationAddressText: { type: string }
+        organizationLatitude: { type: number, format: double }
+        organizationLongitude: { type: number, format: double }
+        description: { type: string }
+        attachments: { type: array, items: { type: string } }
+    Task:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        taskCode: { type: string }
+        taskTitle: { type: string }
+        status: { type: string }
+        assignedAgentId: { type: string, nullable: true }
+paths:
+  /auth/otp/send:
+    post:
+      tags: [Auth]
+      summary: Send OTP
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SendOtpRequest' }
+      responses:
+        '200': { description: OTP sent }
+        '429': { description: Rate limited }
+  /auth/otp/verify:
+    post:
+      tags: [Auth]
+      summary: Verify OTP and create session
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VerifyOtpRequest' }
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+  /customers/me:
+    get:
+      tags: [Customers]
+      summary: Get customer profile
+      responses:
+        '200': { description: Profile returned }
+    patch:
+      tags: [Customers]
+      summary: Update customer profile
+      responses:
+        '200': { description: Profile updated }
+  /agents/register:
+    post:
+      tags: [Agents]
+      summary: Submit agent KYC registration
+      responses:
+        '201': { description: Agent registration submitted }
+  /agents/me:
+    get:
+      tags: [Agents]
+      summary: Get agent profile
+      responses:
+        '200': { description: Agent profile returned }
+  /tasks:
+    post:
+      tags: [Tasks]
+      summary: Create document task and broadcast to nearby agents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateTaskRequest' }
+      responses:
+        '201':
+          description: Task created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Task' }
+    get:
+      tags: [Tasks]
+      summary: List tasks for authenticated user
+      responses:
+        '200': { description: Task list }
+  /tasks/{taskId}:
+    get:
+      tags: [Tasks]
+      summary: Get task detail
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Task detail }
+  /tasks/{taskId}/accept:
+    post:
+      tags: [Tasks]
+      summary: Agent accepts broadcasted task
+      responses:
+        '200': { description: Task accepted and chat room created }
+  /tasks/{taskId}/contract/confirm:
+    post:
+      tags: [Tasks]
+      summary: Customer confirms agreed task details and starts task
+      responses:
+        '200': { description: Task active }
+  /tasks/{taskId}/status:
+    patch:
+      tags: [Tasks]
+      summary: Agent updates task status and note
+      responses:
+        '200': { description: Status updated }
+  /tasks/{taskId}/complete:
+    post:
+      tags: [Tasks]
+      summary: Customer closes task as completed
+      responses:
+        '200': { description: Task completed }
+  /chat/rooms/{roomId}/messages:
+    get:
+      tags: [Chat]
+      summary: Get chat messages
+      responses:
+        '200': { description: Messages returned }
+    post:
+      tags: [Chat]
+      summary: Send message
+      responses:
+        '201': { description: Message sent }
+  /reviews:
+    post:
+      tags: [Reviews]
+      summary: Submit review for completed task
+      responses:
+        '201': { description: Review created }
+  /admin/agents/pending:
+    get:
+      tags: [Admin]
+      summary: List pending agent verification requests
+      responses:
+        '200': { description: Pending agents }
+  /admin/agents/{agentId}/verify:
+    post:
+      tags: [Admin]
+      summary: Approve or reject agent verification
+      responses:
+        '200': { description: Verification decision saved }
+  /admin/disputes:
+    get:
+      tags: [Admin]
+      summary: List disputes
+      responses:
+        '200': { description: Disputes returned }
