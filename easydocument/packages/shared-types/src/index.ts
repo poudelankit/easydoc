@@ -4,6 +4,8 @@ export type UserStatus = "PENDING_OTP" | "ACTIVE" | "SUSPENDED" | "DELETED";
 
 export type AgentStatus = "DRAFT" | "PENDING_VERIFICATION" | "VERIFIED" | "REJECTED" | "SUSPENDED";
 
+export type TaskStatus = "CREATED" | "ACCEPTED";
+
 export interface AuthUser {
   id: string;
   phoneNumber: string;

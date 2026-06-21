@@ -10,6 +10,7 @@ import { RedisModule } from "./modules/redis/redis.module";
 import { StorageModule } from "./modules/storage/storage.module";
 import { UsersModule } from "./modules/users/users.module";
 import { AdminModule } from "./modules/admin/admin.module";
+import { TasksModule } from "./modules/tasks/tasks.module";
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { AdminModule } from "./modules/admin/admin.module";
     AuthModule,
     UsersModule,
     CustomersModule,
+    TasksModule,
     AgentsModule,
     AdminModule,
     HealthModule

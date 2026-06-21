@@ -17,6 +17,11 @@ export class StorageService {
     return `local/kyc/${userId}/${kind.toLowerCase()}/${newTokenId()}.${cleanExtension}`;
   }
 
+  buildTaskSupportingPlaceholderKey(userId: string, taskId: string, extension: string): string {
+    const cleanExtension = extension.replace(/^\./, "").toLowerCase() || "bin";
+    return `local/tasks/${userId}/${taskId}/supporting/${newTokenId()}.${cleanExtension}`;
+  }
+
   async healthCheck(): Promise<boolean> {
     await this.client.listBuckets();
     return true;

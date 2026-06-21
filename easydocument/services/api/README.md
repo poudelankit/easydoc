@@ -16,9 +16,9 @@ Node.js + NestJS backend API for EasyDocument.
 
 ## Current State
 
-This folder contains the Phase 1 NestJS API foundation.
+This folder contains the Phase 2 NestJS API foundation for auth, profiles, task creation, nearby task discovery, and task acceptance.
 
-## Implemented Phase 1 Endpoints
+## Implemented Endpoints
 
 - `GET /health/live`
 - `GET /health/ready`
@@ -35,6 +35,11 @@ This folder contains the Phase 1 NestJS API foundation.
 - `POST /v1/agents/register`
 - `GET /v1/agents/me`
 - `PATCH /v1/agents/me/location`
+- `GET /v1/agents/nearby-requests`
+- `POST /v1/agents/tasks/:id/accept`
+- `POST /v1/tasks`
+- `GET /v1/tasks/me`
+- `GET /v1/tasks/:id`
 - `GET /v1/admin/me`
 
 ## Local Setup

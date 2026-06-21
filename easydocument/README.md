@@ -2,7 +2,7 @@
 
 EasyDocument is a Nepal-only document services marketplace connecting customers with verified local agents for document retrieval, submission, verification, and office follow-up work.
 
-This repository is scaffolded as a monorepo for the Enterprise Implementation Package. It currently contains structure, package configuration, environment templates, startup scripts, documentation placeholders, and local infrastructure only.
+This repository is the EasyDocument Enterprise Implementation Package monorepo. It currently contains the Phase 2 foundation for authentication, profiles, agent onboarding, task creation, nearby task discovery, and task acceptance.
 
 ## Monorepo Layout
 
@@ -36,19 +36,20 @@ easydocument/
 - Cache: Redis.
 - Object storage: MinIO.
 - Realtime: Socket.IO.
-- Calls: WebRTC signaling is planned, but not implemented in this scaffold.
+- Calls: WebRTC signaling is planned, but not implemented.
 
-## Out Of Scope For This Scaffold
+## Out Of Scope
 
 The following are intentionally not implemented yet:
 
 - Chat.
-- Calls.
+- Audio calls.
+- Video calls.
 - Payments.
 - Reviews.
 - Analytics.
 - Admin mediation.
-- Marketplace task lifecycle.
+- Task statuses beyond `CREATED` and `ACCEPTED`.
 
 ## Local Infrastructure
 
@@ -70,11 +71,11 @@ Stop local infrastructure:
 ./scripts/stop-local-infra.sh
 ```
 
-## Next Phase
+## Current Phase
 
-Phase 1 implements authentication and profile foundations: OTP auth, refresh token rotation, customer profile, agent KYC submission placeholders, permanent agent location capture, minimal admin RBAC verification, and first PostgreSQL migrations.
+Phase 2 includes the Phase 1 authentication/profile foundation plus document task creation, customer task views, nearby agent discovery from permanent agent location and task organization coordinates, and agent acceptance.
 
-## Phase 1 Run Commands
+## Local Run Commands
 
 Install JavaScript dependencies:
 

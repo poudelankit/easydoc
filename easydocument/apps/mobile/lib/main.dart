@@ -40,6 +40,8 @@ class _PhaseOneShellState extends State<PhaseOneShell> {
       const OtpShellScreen(),
       const CustomerProfileShellScreen(),
       const AgentKycShellScreen(),
+      const CustomerTaskShellScreen(),
+      const AgentTaskShellScreen(),
     ];
 
     return Scaffold(
@@ -70,6 +72,16 @@ class _PhaseOneShellState extends State<PhaseOneShell> {
             icon: Icon(Icons.badge_outlined),
             selectedIcon: Icon(Icons.badge),
             label: 'Agent',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.assignment_outlined),
+            selectedIcon: Icon(Icons.assignment),
+            label: 'Tasks',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.travel_explore_outlined),
+            selectedIcon: Icon(Icons.travel_explore),
+            label: 'Agent Work',
           ),
         ],
       ),
@@ -212,6 +224,182 @@ class AgentKycShellScreen extends StatelessWidget {
   }
 }
 
+class CustomerTaskShellScreen extends StatelessWidget {
+  const CustomerTaskShellScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _ShellPane(
+      title: 'Customer Tasks',
+      description: 'Create a document service request and review the accepted agent details.',
+      children: [
+        CustomerCreateTaskScreen(),
+        SizedBox(height: 24),
+        CustomerTaskDetailScreen(),
+      ],
+    );
+  }
+}
+
+class CustomerCreateTaskScreen extends StatelessWidget {
+  const CustomerCreateTaskScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _TaskPanel(
+      title: 'Create Task',
+      children: [
+        TextField(
+          decoration: InputDecoration(
+            labelText: 'Document type',
+            hintText: 'Citizenship',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        SizedBox(height: 12),
+        TextField(
+          decoration: InputDecoration(
+            labelText: 'Organization name',
+            hintText: 'CDAO',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        SizedBox(height: 12),
+        TextField(
+          minLines: 2,
+          maxLines: 3,
+          decoration: InputDecoration(
+            labelText: 'Organization address',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Latitude',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Longitude',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 12),
+        TextField(
+          minLines: 3,
+          maxLines: 5,
+          decoration: InputDecoration(
+            labelText: 'Request description',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        SizedBox(height: 16),
+        _StatusChip(label: 'Supporting document placeholder'),
+        SizedBox(height: 16),
+        _ButtonRow(
+          primaryLabel: 'Create Task',
+          secondaryLabel: 'Add Placeholder',
+        ),
+      ],
+    );
+  }
+}
+
+class CustomerTaskDetailScreen extends StatelessWidget {
+  const CustomerTaskDetailScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _TaskPanel(
+      title: 'Task Detail',
+      children: [
+        _ReadonlyLine(label: 'Task name', value: 'SITA CUSTOMER-CITIZENSHIP-CDAO'),
+        _ReadonlyLine(label: 'Status', value: 'CREATED or ACCEPTED'),
+        _ReadonlyLine(label: 'Assigned agent', value: 'Shown after acceptance'),
+        _ReadonlyLine(label: 'Agent phone', value: 'Shown after acceptance'),
+        SizedBox(height: 12),
+        _ButtonRow(
+          primaryLabel: 'Refresh Detail',
+          secondaryLabel: 'View My Tasks',
+        ),
+      ],
+    );
+  }
+}
+
+class AgentTaskShellScreen extends StatelessWidget {
+  const AgentTaskShellScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _ShellPane(
+      title: 'Agent Tasks',
+      description: 'Review nearby customer requests and inspect accepted task details.',
+      children: [
+        AgentNearbyRequestsScreen(),
+        SizedBox(height: 24),
+        AgentAcceptedTaskDetailScreen(),
+      ],
+    );
+  }
+}
+
+class AgentNearbyRequestsScreen extends StatelessWidget {
+  const AgentNearbyRequestsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _TaskPanel(
+      title: 'Nearby Requests',
+      children: [
+        _ReadonlyLine(label: 'Document', value: 'Citizenship'),
+        _ReadonlyLine(label: 'Organization', value: 'CDAO'),
+        _ReadonlyLine(label: 'Distance', value: 'Nearest first'),
+        SizedBox(height: 12),
+        _ButtonRow(
+          primaryLabel: 'Accept',
+          secondaryLabel: 'Refresh Nearby',
+        ),
+      ],
+    );
+  }
+}
+
+class AgentAcceptedTaskDetailScreen extends StatelessWidget {
+  const AgentAcceptedTaskDetailScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _TaskPanel(
+      title: 'Accepted Task Detail',
+      children: [
+        _ReadonlyLine(label: 'Customer', value: 'Shown after acceptance'),
+        _ReadonlyLine(label: 'Customer phone', value: 'Shown after acceptance'),
+        _ReadonlyLine(label: 'Task status', value: 'ACCEPTED'),
+        _ReadonlyLine(label: 'Organization address', value: 'Babarmahal, Kathmandu'),
+        SizedBox(height: 12),
+        _ButtonRow(
+          primaryLabel: 'Refresh Task',
+          secondaryLabel: 'Open Details',
+        ),
+      ],
+    );
+  }
+}
+
 class _ShellPane extends StatelessWidget {
   const _ShellPane({
     required this.title,
@@ -265,6 +453,70 @@ class _ButtonRow extends StatelessWidget {
           child: Text(secondaryLabel),
         ),
       ],
+    );
+  }
+}
+
+class _TaskPanel extends StatelessWidget {
+  const _TaskPanel({
+    required this.title,
+    required this.children,
+  });
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 16),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReadonlyLine extends StatelessWidget {
+  const _ReadonlyLine({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 128,
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
     );
   }
 }

@@ -7,11 +7,13 @@ Flutter application for EasyDocument customers and agents.
 - Customer OTP authentication and profile setup.
 - Agent OTP authentication and KYC onboarding.
 - Role-aware navigation for customer and agent flows.
-- Future task, matching, chat, calls, reviews, and disputes modules.
+- Customer task creation and task detail placeholders.
+- Agent nearby request and accepted task detail placeholders.
+- Future chat, calls, reviews, and disputes modules.
 
 ## Current State
 
-This folder contains the Phase 1 Flutter shell for OTP, customer profile, and agent KYC onboarding flows. API integration will be wired after the backend contracts stabilize.
+This folder contains the Phase 2 Flutter shell for OTP, customer profile, agent KYC onboarding, customer task placeholders, and agent task placeholders. API integration will be wired after the backend contracts stabilize.
 
 ## Local Setup
 
