@@ -2,4 +2,4 @@
 
 Shared TypeScript API contracts and domain types for EasyDocument.
 
-This package is intentionally empty until backend and admin API contracts are implemented in Phase 1.
+This package contains shared auth, task, call, and Phase 6 admin dashboard/verification/task monitoring response contracts.

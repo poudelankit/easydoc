@@ -2,7 +2,7 @@
 
 EasyDocument is a Nepal-only document services marketplace connecting customers with verified local agents for document retrieval, submission, verification, and office follow-up work.
 
-This repository is the EasyDocument Enterprise Implementation Package monorepo. It currently contains the Phase 5 foundation for authentication, profiles, agent onboarding, task creation, nearby task discovery, task acceptance, accepted-task communication, post-acceptance task lifecycle tracking, and in-app call signaling.
+This repository is the EasyDocument Enterprise Implementation Package monorepo. It currently contains the Phase 6 foundation for authentication, profiles, agent onboarding, task creation, nearby task discovery, task acceptance, accepted-task communication, post-acceptance task lifecycle tracking, in-app call signaling, and admin operational management.
 
 ## Monorepo Layout
 
@@ -36,7 +36,7 @@ easydocument/
 - Cache: Redis.
 - Object storage: MinIO.
 - Realtime: Socket.IO.
-- Calls: WebRTC signaling is planned, but not implemented.
+- Calls: Socket.IO WebRTC signaling foundation; production TURN/STUN is not implemented.
 
 ## Out Of Scope
 
@@ -72,7 +72,7 @@ Stop local infrastructure:
 
 ## Current Phase
 
-Phase 5 includes the Phase 1 authentication/profile foundation, Phase 2 task creation and acceptance flow, Phase 3 task communication, Phase 4 lifecycle tracking, plus audio/video call session metadata and Socket.IO WebRTC signaling events.
+Phase 6 includes the Phase 1 authentication/profile foundation, Phase 2 task creation and acceptance flow, Phase 3 task communication, Phase 4 lifecycle tracking, Phase 5 call signaling metadata, plus the React admin operational portal and admin-only backend endpoints.
 
 ## Local Run Commands
 

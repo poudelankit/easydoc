@@ -12,11 +12,11 @@ Node.js + NestJS backend API for EasyDocument.
 - Redis-backed rate limiting/cache support.
 - MinIO private file storage.
 - Socket.IO realtime foundation.
-- WebRTC signaling planned for a later phase.
+- Admin operational management.
 
 ## Current State
 
-This folder contains the Phase 5 NestJS API foundation for auth, profiles, task creation, nearby task discovery, task acceptance, accepted-task communication, task lifecycle tracking, and in-app call signaling metadata.
+This folder contains the Phase 6 NestJS API foundation for auth, profiles, task creation, nearby task discovery, task acceptance, accepted-task communication, task lifecycle tracking, in-app call signaling metadata, and admin operational management.
 
 ## Implemented Endpoints
 
@@ -54,6 +54,15 @@ This folder contains the Phase 5 NestJS API foundation for auth, profiles, task 
 - `POST /v1/tasks/:taskId/calls`
 - `POST /v1/tasks/:taskId/calls/:callId/end`
 - `GET /v1/admin/me`
+- `GET /v1/admin/dashboard`
+- `GET /v1/admin/agents/pending`
+- `GET /v1/admin/agents/:agentId`
+- `POST /v1/admin/agents/:agentId/approve`
+- `POST /v1/admin/agents/:agentId/reject`
+- `GET /v1/admin/tasks`
+- `GET /v1/admin/tasks/:taskId`
+- `GET /v1/admin/tasks/:taskId/timeline`
+- `GET /v1/admin/tasks/:taskId/communication-audit`
 
 ## Socket.IO Events
 

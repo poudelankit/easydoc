@@ -1,1 +1,1 @@
-{"root":["./src/main.tsx","./src/app/AdminShell.tsx","./src/app/config.ts","./src/test/config.test.ts"],"version":"5.9.3"}
+{"root":["./src/main.tsx","./src/app/AdminShell.tsx","./src/app/adminApi.ts","./src/app/config.ts","./src/test/config.test.ts"],"version":"5.9.3"}
