@@ -236,6 +236,8 @@ class CustomerTaskShellScreen extends StatelessWidget {
         CustomerCreateTaskScreen(),
         SizedBox(height: 24),
         CustomerTaskDetailScreen(),
+        SizedBox(height: 24),
+        TaskChatScreen(),
       ],
     );
   }
@@ -333,7 +335,7 @@ class CustomerTaskDetailScreen extends StatelessWidget {
         SizedBox(height: 12),
         _ButtonRow(
           primaryLabel: 'Refresh Detail',
-          secondaryLabel: 'View My Tasks',
+          secondaryLabel: 'Open Chat',
         ),
       ],
     );
@@ -352,6 +354,8 @@ class AgentTaskShellScreen extends StatelessWidget {
         AgentNearbyRequestsScreen(),
         SizedBox(height: 24),
         AgentAcceptedTaskDetailScreen(),
+        SizedBox(height: 24),
+        TaskChatScreen(),
       ],
     );
   }
@@ -393,9 +397,142 @@ class AgentAcceptedTaskDetailScreen extends StatelessWidget {
         SizedBox(height: 12),
         _ButtonRow(
           primaryLabel: 'Refresh Task',
-          secondaryLabel: 'Open Details',
+          secondaryLabel: 'Open Chat',
         ),
       ],
+    );
+  }
+}
+
+class TaskChatScreen extends StatelessWidget {
+  const TaskChatScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _TaskPanel(
+      title: 'Task Chat',
+      children: [
+        _ReadonlyLine(label: 'Room', value: 'Created after task acceptance'),
+        _ReadonlyLine(label: 'Access', value: 'Customer and assigned agent only'),
+        SizedBox(height: 8),
+        MessageListPlaceholder(),
+        SizedBox(height: 12),
+        MessageInputPlaceholder(),
+      ],
+    );
+  }
+}
+
+class MessageListPlaceholder extends StatelessWidget {
+  const MessageListPlaceholder({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _ChatBubble(
+          sender: 'Customer',
+          body: 'I uploaded the supporting document placeholder.',
+          readState: 'Read by sender',
+        ),
+        SizedBox(height: 8),
+        _ChatBubble(
+          sender: 'Agent',
+          body: 'I will confirm the organization visit time.',
+          readState: 'Unread by customer',
+        ),
+        SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _StatusChip(label: 'Image placeholder'),
+            _StatusChip(label: 'Document placeholder'),
+            _StatusChip(label: 'Audio placeholder'),
+            _StatusChip(label: 'Video placeholder'),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class MessageInputPlaceholder extends StatelessWidget {
+  const MessageInputPlaceholder({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AttachmentButtonPlaceholder(),
+        SizedBox(width: 8),
+        Expanded(
+          child: TextField(
+            minLines: 1,
+            maxLines: 4,
+            decoration: InputDecoration(
+              labelText: 'Message',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ),
+        SizedBox(width: 8),
+        IconButton(
+          onPressed: null,
+          tooltip: 'Send message placeholder',
+          icon: Icon(Icons.send_outlined),
+        ),
+      ],
+    );
+  }
+}
+
+class AttachmentButtonPlaceholder extends StatelessWidget {
+  const AttachmentButtonPlaceholder({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const IconButton.filledTonal(
+      onPressed: null,
+      tooltip: 'Attach file placeholder',
+      icon: Icon(Icons.attach_file),
+    );
+  }
+}
+
+class _ChatBubble extends StatelessWidget {
+  const _ChatBubble({
+    required this.sender,
+    required this.body,
+    required this.readState,
+  });
+
+  final String sender;
+  final String body;
+  final String readState;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(sender, style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: 4),
+            Text(body),
+            const SizedBox(height: 6),
+            Text(readState, style: Theme.of(context).textTheme.labelSmall),
+          ],
+        ),
+      ),
     );
   }
 }

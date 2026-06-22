@@ -8,6 +8,7 @@ import {
 import { PoolClient, QueryResultRow } from "pg";
 import { AuthenticatedUser, RequestContext } from "../../common/types/authenticated-user";
 import { AuditService } from "../audit/audit.service";
+import { CommunicationService } from "../communication/communication.service";
 import { DatabaseService } from "../database/database.service";
 import { StorageService } from "../storage/storage.service";
 import { UsersService } from "../users/users.service";
@@ -89,7 +90,8 @@ export class TasksService {
     private readonly database: DatabaseService,
     private readonly users: UsersService,
     private readonly storage: StorageService,
-    private readonly audit: AuditService
+    private readonly audit: AuditService,
+    private readonly communication: CommunicationService
   ) {}
 
   async createTask(user: AuthenticatedUser, dto: CreateTaskDto, context: RequestContext) {
@@ -281,6 +283,8 @@ export class TasksService {
          WHERE id = $1`,
         [taskId, user.id]
       );
+
+      await this.communication.ensureRoomForAcceptedTask(candidate.id, client);
 
       return candidate.id;
     });

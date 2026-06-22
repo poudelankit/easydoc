@@ -1,5 +1,6 @@
 import { ConflictException } from "@nestjs/common";
 import { AuditService } from "../audit/audit.service";
+import { CommunicationService } from "../communication/communication.service";
 import { DatabaseService } from "../database/database.service";
 import { StorageService } from "../storage/storage.service";
 import { UsersService } from "../users/users.service";
@@ -38,15 +39,19 @@ function createMocks() {
   const audit = {
     write: jest.fn()
   };
+  const communication = {
+    ensureRoomForAcceptedTask: jest.fn()
+  };
 
   const service = new TasksService(
     database as unknown as DatabaseService,
     users as unknown as UsersService,
     storage as unknown as StorageService,
-    audit as unknown as AuditService
+    audit as unknown as AuditService,
+    communication as unknown as CommunicationService
   );
 
-  return { audit, database, query, service, storage, users };
+  return { audit, communication, database, query, service, storage, users };
 }
 
 function taskRow(overrides: Record<string, unknown> = {}) {
@@ -200,7 +205,7 @@ describe("TasksService", () => {
   });
 
   it("accepts a nearby created request and returns assigned task details", async () => {
-    const { audit, query, service } = createMocks();
+    const { audit, communication, query, service } = createMocks();
     query
       .mockResolvedValueOnce({ rows: [agentLocationRow()] })
       .mockResolvedValueOnce({
@@ -237,6 +242,10 @@ describe("TasksService", () => {
     };
 
     expect(query.mock.calls[2][0]).toContain("UPDATE document_tasks");
+    expect(communication.ensureRoomForAcceptedTask).toHaveBeenCalledWith(
+      "task-id",
+      expect.objectContaining({ query })
+    );
     expect(result.status).toBe("ACCEPTED");
     expect(result.assignedAgent.userId).toBe(agentUser.id);
     expect(result.customer.phoneNumber).toBe(customerUser.phoneNumber);

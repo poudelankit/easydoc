@@ -2,7 +2,7 @@
 
 EasyDocument is a Nepal-only document services marketplace connecting customers with verified local agents for document retrieval, submission, verification, and office follow-up work.
 
-This repository is the EasyDocument Enterprise Implementation Package monorepo. It currently contains the Phase 2 foundation for authentication, profiles, agent onboarding, task creation, nearby task discovery, and task acceptance.
+This repository is the EasyDocument Enterprise Implementation Package monorepo. It currently contains the Phase 3 foundation for authentication, profiles, agent onboarding, task creation, nearby task discovery, task acceptance, and accepted-task communication.
 
 ## Monorepo Layout
 
@@ -42,9 +42,9 @@ easydocument/
 
 The following are intentionally not implemented yet:
 
-- Chat.
 - Audio calls.
 - Video calls.
+- Full notification system.
 - Payments.
 - Reviews.
 - Analytics.
@@ -73,7 +73,7 @@ Stop local infrastructure:
 
 ## Current Phase
 
-Phase 2 includes the Phase 1 authentication/profile foundation plus document task creation, customer task views, nearby agent discovery from permanent agent location and task organization coordinates, and agent acceptance.
+Phase 3 includes the Phase 1 authentication/profile foundation, Phase 2 task creation and acceptance flow, plus one communication room per accepted task, text messages, read receipts, Socket.IO chat events, and chat attachment metadata placeholders.
 
 ## Local Run Commands
 

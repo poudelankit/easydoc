@@ -20,7 +20,7 @@ describe("AppModule", () => {
     process.env = originalEnv;
   });
 
-  it("compiles the Phase 1 application module", async () => {
+  it("compiles the application module", async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule]
     }).compile();

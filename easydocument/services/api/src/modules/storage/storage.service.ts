@@ -22,6 +22,16 @@ export class StorageService {
     return `local/tasks/${userId}/${taskId}/supporting/${newTokenId()}.${cleanExtension}`;
   }
 
+  buildCommunicationAttachmentPlaceholderKey(
+    userId: string,
+    taskId: string,
+    attachmentType: string,
+    extension: string
+  ): string {
+    const cleanExtension = extension.replace(/^\./, "").toLowerCase() || "bin";
+    return `local/chat/${taskId}/${userId}/${attachmentType.toLowerCase()}/${newTokenId()}.${cleanExtension}`;
+  }
+
   async healthCheck(): Promise<boolean> {
     await this.client.listBuckets();
     return true;

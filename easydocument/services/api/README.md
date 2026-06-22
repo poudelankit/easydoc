@@ -16,7 +16,7 @@ Node.js + NestJS backend API for EasyDocument.
 
 ## Current State
 
-This folder contains the Phase 2 NestJS API foundation for auth, profiles, task creation, nearby task discovery, and task acceptance.
+This folder contains the Phase 3 NestJS API foundation for auth, profiles, task creation, nearby task discovery, task acceptance, and accepted-task communication.
 
 ## Implemented Endpoints
 
@@ -40,7 +40,19 @@ This folder contains the Phase 2 NestJS API foundation for auth, profiles, task 
 - `POST /v1/tasks`
 - `GET /v1/tasks/me`
 - `GET /v1/tasks/:id`
+- `GET /v1/tasks/:taskId/room`
+- `GET /v1/tasks/:taskId/messages`
+- `POST /v1/tasks/:taskId/messages`
+- `POST /v1/tasks/:taskId/attachments`
 - `GET /v1/admin/me`
+
+## Socket.IO Events
+
+- `task:join`
+- `task:message:send`
+- `task:message:new`
+- `task:typing`
+- `task:read`
 
 ## Local Setup
 
