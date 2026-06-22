@@ -1,4 +1,5 @@
 import { JwtService } from "@nestjs/jwt";
+import { CallsService } from "./calls.service";
 import { CommunicationGateway } from "./communication.gateway";
 import { CommunicationService } from "./communication.service";
 
@@ -14,11 +15,19 @@ function createGateway() {
     sendMessage: jest.fn(),
     markMessagesRead: jest.fn()
   };
+  const calls = {
+    createCallSession: jest.fn(),
+    acceptCall: jest.fn(),
+    declineCall: jest.fn(),
+    endCall: jest.fn(),
+    authorizeCallSignal: jest.fn()
+  };
   const jwt = {
     verifyAsync: jest.fn()
   };
   const gateway = new CommunicationGateway(
     communication as unknown as CommunicationService,
+    calls as unknown as CallsService,
     jwt as unknown as JwtService
   );
   const emit = jest.fn();
@@ -28,7 +37,7 @@ function createGateway() {
     }
   });
 
-  return { communication, emit, gateway, jwt };
+  return { calls, communication, emit, gateway, jwt };
 }
 
 function socket(): any {
@@ -124,5 +133,75 @@ describe("CommunicationGateway", () => {
     });
 
     expect(emit).toHaveBeenCalledWith("task:read", receipt);
+  });
+
+  it("creates call sessions and emits ringing events", async () => {
+    const { calls, emit, gateway } = createGateway();
+    const client = socket();
+    client.data.user = socketUser;
+    calls.createCallSession.mockResolvedValue({
+      id: "call-id",
+      taskId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      status: "RINGING",
+      rtcConfiguration: { iceServers: [] }
+    });
+
+    const event = await gateway.handleCallRequest(client as never, {
+      taskId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      callType: "AUDIO"
+    });
+
+    expect(client.join).toHaveBeenCalledWith("task:bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+    expect(event.callId).toBe("call-id");
+    expect(emit).toHaveBeenCalledWith("call:ringing", event);
+  });
+
+  it("accepts calls and emits call accept events", async () => {
+    const { calls, emit, gateway } = createGateway();
+    const client = socket();
+    client.data.user = socketUser;
+    calls.acceptCall.mockResolvedValue({
+      id: "call-id",
+      taskId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      status: "ACCEPTED",
+      rtcConfiguration: { iceServers: [] }
+    });
+
+    const event = await gateway.handleCallAccept(client as never, {
+      taskId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      callId: "call-id"
+    });
+
+    expect(event.call.status).toBe("ACCEPTED");
+    expect(emit).toHaveBeenCalledWith("call:accept", event);
+  });
+
+  it("relays WebRTC offers to other task room participants", async () => {
+    const { calls, gateway } = createGateway();
+    const client = socket();
+    const peerEmit = jest.fn();
+    client.data.user = socketUser;
+    client.to = jest.fn(() => ({ emit: peerEmit }));
+    calls.authorizeCallSignal.mockResolvedValue({
+      call: {
+        id: "call-id",
+        taskId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        status: "ACCEPTED"
+      },
+      rtcConfiguration: { iceServers: [] }
+    });
+
+    const event = await gateway.handleCallOffer(client as never, {
+      taskId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+      callId: "call-id",
+      description: {
+        type: "offer",
+        sdp: "v=0..."
+      }
+    });
+
+    expect(peerEmit).toHaveBeenCalledWith("call:offer", event);
+    expect(event.description).toEqual({ type: "offer", sdp: "v=0..." });
+    expect(event.rtcConfiguration).toEqual({ iceServers: [] });
   });
 });

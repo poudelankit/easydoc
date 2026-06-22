@@ -16,7 +16,7 @@ Node.js + NestJS backend API for EasyDocument.
 
 ## Current State
 
-This folder contains the Phase 3 NestJS API foundation for auth, profiles, task creation, nearby task discovery, task acceptance, and accepted-task communication.
+This folder contains the Phase 5 NestJS API foundation for auth, profiles, task creation, nearby task discovery, task acceptance, accepted-task communication, task lifecycle tracking, and in-app call signaling metadata.
 
 ## Implemented Endpoints
 
@@ -40,10 +40,19 @@ This folder contains the Phase 3 NestJS API foundation for auth, profiles, task 
 - `POST /v1/tasks`
 - `GET /v1/tasks/me`
 - `GET /v1/tasks/:id`
+- `POST /v1/tasks/:id/confirm-deal`
+- `POST /v1/tasks/:id/expected-date`
+- `POST /v1/tasks/:id/status`
+- `GET /v1/tasks/:id/timeline`
+- `POST /v1/tasks/:id/complete`
+- `POST /v1/tasks/:id/cancel`
 - `GET /v1/tasks/:taskId/room`
 - `GET /v1/tasks/:taskId/messages`
 - `POST /v1/tasks/:taskId/messages`
 - `POST /v1/tasks/:taskId/attachments`
+- `GET /v1/tasks/:taskId/calls`
+- `POST /v1/tasks/:taskId/calls`
+- `POST /v1/tasks/:taskId/calls/:callId/end`
 - `GET /v1/admin/me`
 
 ## Socket.IO Events
@@ -53,6 +62,14 @@ This folder contains the Phase 3 NestJS API foundation for auth, profiles, task 
 - `task:message:new`
 - `task:typing`
 - `task:read`
+- `call:request`
+- `call:ringing`
+- `call:accept`
+- `call:decline`
+- `call:offer`
+- `call:answer`
+- `call:ice-candidate`
+- `call:end`
 
 ## Local Setup
 

@@ -12,7 +12,15 @@ import {
 import { Server, Socket } from "socket.io";
 import { resolveCorsOrigin } from "../../common/config/security-env";
 import { AuthenticatedUser } from "../../common/types/authenticated-user";
+import { CallsService } from "./calls.service";
 import { CommunicationService } from "./communication.service";
+import {
+  CallDescriptionEventDto,
+  CallIceCandidateEventDto,
+  CallRequestEventDto,
+  CallSessionEventDto,
+  EndCallEventDto
+} from "./dto/call.dto";
 import { ReadEventDto, SocketMessageDto, TaskRoomEventDto, TypingEventDto } from "./dto/socket-events.dto";
 
 interface AccessTokenPayload {
@@ -43,6 +51,7 @@ export class CommunicationGateway implements OnGatewayConnection {
 
   constructor(
     private readonly communication: CommunicationService,
+    private readonly calls: CallsService,
     private readonly jwt: JwtService
   ) {}
 
@@ -103,6 +112,128 @@ export class CommunicationGateway implements OnGatewayConnection {
     return readReceipt;
   }
 
+  @SubscribeMessage("call:request")
+  async handleCallRequest(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() payload: CallRequestEventDto
+  ) {
+    const user = this.getSocketUser(client);
+    const call = await this.calls.createCallSession(payload.taskId, user, payload);
+    await client.join(this.socketRoom(payload.taskId));
+    const event = this.callEvent(call, user);
+    this.server.to(this.socketRoom(payload.taskId)).emit("call:ringing", event);
+    return event;
+  }
+
+  @SubscribeMessage("call:accept")
+  async handleCallAccept(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() payload: CallSessionEventDto
+  ) {
+    const user = this.getSocketUser(client);
+    const call = await this.calls.acceptCall(payload.taskId, payload.callId, user);
+    await client.join(this.socketRoom(payload.taskId));
+    const event = this.callEvent(call, user);
+    this.server.to(this.socketRoom(payload.taskId)).emit("call:accept", event);
+    return event;
+  }
+
+  @SubscribeMessage("call:decline")
+  async handleCallDecline(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() payload: CallSessionEventDto
+  ) {
+    const user = this.getSocketUser(client);
+    const call = await this.calls.declineCall(payload.taskId, payload.callId, user);
+    const event = this.callEvent(call, user);
+    this.server.to(this.socketRoom(payload.taskId)).emit("call:decline", event);
+    return event;
+  }
+
+  @SubscribeMessage("call:offer")
+  async handleCallOffer(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() payload: CallDescriptionEventDto
+  ) {
+    const user = this.getSocketUser(client);
+    const { call, rtcConfiguration } = await this.calls.authorizeCallSignal(
+      payload.taskId,
+      payload.callId,
+      user
+    );
+    const event = {
+      taskId: payload.taskId,
+      callId: payload.callId,
+      fromUserId: user.id,
+      call,
+      description: payload.description,
+      rtcConfiguration
+    };
+    client.to(this.socketRoom(payload.taskId)).emit("call:offer", event);
+    return event;
+  }
+
+  @SubscribeMessage("call:answer")
+  async handleCallAnswer(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() payload: CallDescriptionEventDto
+  ) {
+    const user = this.getSocketUser(client);
+    const { call, rtcConfiguration } = await this.calls.authorizeCallSignal(
+      payload.taskId,
+      payload.callId,
+      user
+    );
+    const event = {
+      taskId: payload.taskId,
+      callId: payload.callId,
+      fromUserId: user.id,
+      call,
+      description: payload.description,
+      rtcConfiguration
+    };
+    client.to(this.socketRoom(payload.taskId)).emit("call:answer", event);
+    return event;
+  }
+
+  @SubscribeMessage("call:ice-candidate")
+  async handleCallIceCandidate(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() payload: CallIceCandidateEventDto
+  ) {
+    const user = this.getSocketUser(client);
+    const { call, rtcConfiguration } = await this.calls.authorizeCallSignal(
+      payload.taskId,
+      payload.callId,
+      user
+    );
+    const event = {
+      taskId: payload.taskId,
+      callId: payload.callId,
+      fromUserId: user.id,
+      call,
+      candidate: payload.candidate,
+      rtcConfiguration
+    };
+    client.to(this.socketRoom(payload.taskId)).emit("call:ice-candidate", event);
+    return event;
+  }
+
+  @SubscribeMessage("call:end")
+  async handleCallEnd(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() payload: EndCallEventDto
+  ) {
+    const user = this.getSocketUser(client);
+    const call = await this.calls.endCall(payload.taskId, payload.callId, user, {
+      status: payload.status,
+      note: payload.note
+    });
+    const event = this.callEvent(call, user);
+    this.server.to(this.socketRoom(payload.taskId)).emit("call:end", event);
+    return event;
+  }
+
   private async authenticate(client: Socket): Promise<AuthenticatedUser> {
     const token = this.extractToken(client);
     if (!token) {
@@ -153,5 +284,15 @@ export class CommunicationGateway implements OnGatewayConnection {
 
   private socketRoom(taskId: string) {
     return `task:${taskId}`;
+  }
+
+  private callEvent(call: Record<string, unknown>, user: AuthenticatedUser) {
+    return {
+      taskId: call.taskId,
+      callId: call.id,
+      fromUserId: user.id,
+      call,
+      rtcConfiguration: call.rtcConfiguration
+    };
   }
 }

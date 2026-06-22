@@ -9,11 +9,14 @@ Flutter application for EasyDocument customers and agents.
 - Role-aware navigation for customer and agent flows.
 - Customer task creation and task detail placeholders.
 - Agent nearby request and accepted task detail placeholders.
-- Future chat, calls, reviews, and disputes modules.
+- Customer task timeline and completion placeholders.
+- Agent progress update and expected delivery date placeholders.
+- Audio, video, incoming call, active call, and external phone call placeholders with `tel:` URI launch support.
+- Future production chat/call client integration, reviews, and disputes modules.
 
 ## Current State
 
-This folder contains the Phase 2 Flutter shell for OTP, customer profile, agent KYC onboarding, customer task placeholders, and agent task placeholders. API integration will be wired after the backend contracts stabilize.
+This folder contains the Phase 5 Flutter shell for OTP, customer profile, agent KYC onboarding, customer task placeholders, agent task placeholders, task chat placeholders, task lifecycle placeholders, and task call placeholders. API integration will be wired after the backend contracts stabilize.
 
 ## Local Setup
 

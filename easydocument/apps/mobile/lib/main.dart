@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() {
   runApp(const EasyDocumentMobileApp());
@@ -237,6 +238,10 @@ class CustomerTaskShellScreen extends StatelessWidget {
         SizedBox(height: 24),
         CustomerTaskDetailScreen(),
         SizedBox(height: 24),
+        CustomerTaskTimelineScreen(),
+        SizedBox(height: 24),
+        TaskCallControlsScreen(),
+        SizedBox(height: 24),
         TaskChatScreen(),
       ],
     );
@@ -329,14 +334,34 @@ class CustomerTaskDetailScreen extends StatelessWidget {
       title: 'Task Detail',
       children: [
         _ReadonlyLine(label: 'Task name', value: 'SITA CUSTOMER-CITIZENSHIP-CDAO'),
-        _ReadonlyLine(label: 'Status', value: 'CREATED or ACCEPTED'),
+        _ReadonlyLine(label: 'Status', value: 'ACCEPTED, DEAL_CONFIRMED, IN_PROGRESS, or later'),
         _ReadonlyLine(label: 'Assigned agent', value: 'Shown after acceptance'),
         _ReadonlyLine(label: 'Agent phone', value: 'Shown after acceptance'),
+        ExpectedDeliveryDateDisplay(),
         SizedBox(height: 12),
         _ButtonRow(
-          primaryLabel: 'Refresh Detail',
+          primaryLabel: 'Confirm Deal',
           secondaryLabel: 'Open Chat',
         ),
+      ],
+    );
+  }
+}
+
+class CustomerTaskTimelineScreen extends StatelessWidget {
+  const CustomerTaskTimelineScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _TaskPanel(
+      title: 'Task Timeline',
+      children: [
+        _TimelineStep(status: 'ACCEPTED', actor: 'Agent', note: 'Agent accepted the request'),
+        _TimelineStep(status: 'DEAL_CONFIRMED', actor: 'Customer', note: 'Customer started the deal'),
+        _TimelineStep(status: 'IN_PROGRESS', actor: 'Agent', note: 'Agent began office work'),
+        _TimelineStep(status: 'READY_FOR_DELIVERY', actor: 'Agent', note: 'Document ready for handoff'),
+        SizedBox(height: 12),
+        CompleteTaskButtonPlaceholder(),
       ],
     );
   }
@@ -354,6 +379,10 @@ class AgentTaskShellScreen extends StatelessWidget {
         AgentNearbyRequestsScreen(),
         SizedBox(height: 24),
         AgentAcceptedTaskDetailScreen(),
+        SizedBox(height: 24),
+        AgentProgressUpdateScreen(),
+        SizedBox(height: 24),
+        TaskCallControlsScreen(),
         SizedBox(height: 24),
         TaskChatScreen(),
       ],
@@ -392,14 +421,277 @@ class AgentAcceptedTaskDetailScreen extends StatelessWidget {
       children: [
         _ReadonlyLine(label: 'Customer', value: 'Shown after acceptance'),
         _ReadonlyLine(label: 'Customer phone', value: 'Shown after acceptance'),
-        _ReadonlyLine(label: 'Task status', value: 'ACCEPTED'),
+        _ReadonlyLine(label: 'Task status', value: 'DEAL_CONFIRMED or active progress status'),
         _ReadonlyLine(label: 'Organization address', value: 'Babarmahal, Kathmandu'),
+        ExpectedDeliveryDateDisplay(),
         SizedBox(height: 12),
         _ButtonRow(
-          primaryLabel: 'Refresh Task',
+          primaryLabel: 'Set Expected Date',
           secondaryLabel: 'Open Chat',
         ),
       ],
+    );
+  }
+}
+
+class AgentProgressUpdateScreen extends StatelessWidget {
+  const AgentProgressUpdateScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _TaskPanel(
+      title: 'Progress Update',
+      children: [
+        TextField(
+          decoration: InputDecoration(
+            labelText: 'Expected completion date',
+            hintText: '2026-07-10',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        SizedBox(height: 12),
+        TextField(
+          minLines: 2,
+          maxLines: 4,
+          decoration: InputDecoration(
+            labelText: 'Progress note',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _StatusChip(label: 'IN_PROGRESS'),
+            _StatusChip(label: 'DOCUMENT_REQUESTED'),
+            _StatusChip(label: 'VISITED_ORGANIZATION'),
+            _StatusChip(label: 'DOCUMENT_COLLECTED'),
+            _StatusChip(label: 'READY_FOR_DELIVERY'),
+            _StatusChip(label: 'DELIVERED'),
+          ],
+        ),
+        SizedBox(height: 16),
+        _ButtonRow(
+          primaryLabel: 'Update Status',
+          secondaryLabel: 'Save Date',
+        ),
+      ],
+    );
+  }
+}
+
+class ExpectedDeliveryDateDisplay extends StatelessWidget {
+  const ExpectedDeliveryDateDisplay({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _ReadonlyLine(label: 'Expected delivery', value: 'Set by assigned agent');
+  }
+}
+
+class CompleteTaskButtonPlaceholder extends StatelessWidget {
+  const CompleteTaskButtonPlaceholder({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton.icon(
+      onPressed: null,
+      icon: const Icon(Icons.task_alt),
+      label: const Text('Complete Task'),
+    );
+  }
+}
+
+class _TimelineStep extends StatelessWidget {
+  const _TimelineStep({
+    required this.status,
+    required this.actor,
+    required this.note,
+  });
+
+  final String status;
+  final String actor;
+  final String note;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.radio_button_checked, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(status, style: Theme.of(context).textTheme.labelLarge),
+                Text('$actor - $note'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class TaskCallControlsScreen extends StatelessWidget {
+  const TaskCallControlsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _TaskPanel(
+      title: 'Task Calls',
+      children: [
+        _ReadonlyLine(label: 'Access', value: 'Customer and assigned agent only'),
+        _ReadonlyLine(label: 'Signaling', value: 'Socket.IO WebRTC offer, answer, and ICE events'),
+        SizedBox(height: 8),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            AudioCallButtonPlaceholder(),
+            VideoCallButtonPlaceholder(),
+            ExternalPhoneCallButtonPlaceholder(phoneNumber: '+9779800000000'),
+          ],
+        ),
+        SizedBox(height: 16),
+        IncomingCallPlaceholder(),
+        SizedBox(height: 12),
+        ActiveCallPlaceholder(),
+      ],
+    );
+  }
+}
+
+class AudioCallButtonPlaceholder extends StatelessWidget {
+  const AudioCallButtonPlaceholder({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton.icon(
+      onPressed: () {},
+      icon: const Icon(Icons.call_outlined),
+      label: const Text('Audio Call'),
+    );
+  }
+}
+
+class VideoCallButtonPlaceholder extends StatelessWidget {
+  const VideoCallButtonPlaceholder({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton.tonalIcon(
+      onPressed: () {},
+      icon: const Icon(Icons.videocam_outlined),
+      label: const Text('Video Call'),
+    );
+  }
+}
+
+class ExternalPhoneCallButtonPlaceholder extends StatelessWidget {
+  const ExternalPhoneCallButtonPlaceholder({
+    required this.phoneNumber,
+    super.key,
+  });
+
+  final String phoneNumber;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: () => _startPhoneCall(context),
+      icon: const Icon(Icons.phone_forwarded_outlined),
+      label: const Text('Phone Call'),
+    );
+  }
+
+  Future<void> _startPhoneCall(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    final launched = await launchUrl(phoneUri);
+
+    if (!launched && context.mounted) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Phone dialer is unavailable on this device')),
+      );
+    }
+  }
+}
+
+class IncomingCallPlaceholder extends StatelessWidget {
+  const IncomingCallPlaceholder({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _CallStatePanel(
+      icon: Icons.call_received_outlined,
+      title: 'Incoming Call',
+      detail: 'Ringing audio or video call from task participant',
+    );
+  }
+}
+
+class ActiveCallPlaceholder extends StatelessWidget {
+  const ActiveCallPlaceholder({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _CallStatePanel(
+      icon: Icons.graphic_eq_outlined,
+      title: 'Active Call',
+      detail: 'Mute, camera, and end controls will bind to WebRTC later',
+    );
+  }
+}
+
+class _CallStatePanel extends StatelessWidget {
+  const _CallStatePanel({
+    required this.icon,
+    required this.title,
+    required this.detail,
+  });
+
+  final IconData icon;
+  final String title;
+  final String detail;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: Theme.of(context).textTheme.labelLarge),
+                  const SizedBox(height: 4),
+                  Text(detail),
+                ],
+              ),
+            ),
+            const IconButton(
+              onPressed: null,
+              tooltip: 'End call placeholder',
+              icon: Icon(Icons.call_end_outlined),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -10,6 +10,8 @@ PostgreSQL is the EasyDocument system of record. PostGIS is required for agent a
 Phase 1 includes `migrations/001_phase1_foundation.sql` and `seeds/001_local_admin.sql`.
 Phase 2 adds `migrations/002_phase2_tasks.sql` for document service task creation, nearby agent discovery, and acceptance.
 Phase 3 adds `migrations/003_phase3_communication.sql` for accepted-task chat rooms, text messages, read receipts, and attachment metadata.
+Phase 4 adds `migrations/004_phase4_task_lifecycle.sql` for expanded lifecycle statuses, expected completion dates, and task status history.
+Phase 5 adds `migrations/005_phase5_call_foundation.sql` for call sessions and call status history.
 
 The migration covers the auth/profile/KYC foundation only:
 
@@ -33,3 +35,13 @@ Phase 3 adds:
 - `communication_attachments`
 - `communication_message_attachments`
 - `communication_message_reads`
+
+Phase 4 adds:
+
+- `task_status_history`
+- `document_tasks.expected_completion_date`
+
+Phase 5 adds:
+
+- `call_sessions`
+- `call_status_history`

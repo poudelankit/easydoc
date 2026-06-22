@@ -13,10 +13,42 @@ import { DatabaseService } from "../database/database.service";
 import { StorageService } from "../storage/storage.service";
 import { UsersService } from "../users/users.service";
 import { CreateTaskDto, SupportingDocumentPlaceholderDto } from "./dto/create-task.dto";
+import {
+  ExpectedCompletionDateDto,
+  TaskLifecycleNoteDto,
+  UpdateTaskStatusDto
+} from "./dto/task-lifecycle.dto";
 
 const NEARBY_RADIUS_METERS = 25_000;
 
-type TaskStatus = "CREATED" | "ACCEPTED";
+type TaskStatus =
+  | "CREATED"
+  | "ACCEPTED"
+  | "DEAL_CONFIRMED"
+  | "IN_PROGRESS"
+  | "DOCUMENT_REQUESTED"
+  | "VISITED_ORGANIZATION"
+  | "DOCUMENT_COLLECTED"
+  | "READY_FOR_DELIVERY"
+  | "DELIVERED"
+  | "COMPLETED"
+  | "CANCELLED";
+
+type TaskTimelineEventType = "STATUS_CHANGE" | "EXPECTED_DATE_UPDATED";
+
+const TASK_STATUS_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
+  CREATED: ["ACCEPTED", "CANCELLED"],
+  ACCEPTED: ["DEAL_CONFIRMED", "CANCELLED"],
+  DEAL_CONFIRMED: ["IN_PROGRESS", "CANCELLED"],
+  IN_PROGRESS: ["DOCUMENT_REQUESTED"],
+  DOCUMENT_REQUESTED: ["VISITED_ORGANIZATION"],
+  VISITED_ORGANIZATION: ["DOCUMENT_COLLECTED"],
+  DOCUMENT_COLLECTED: ["READY_FOR_DELIVERY"],
+  READY_FOR_DELIVERY: ["DELIVERED"],
+  DELIVERED: ["COMPLETED"],
+  COMPLETED: [],
+  CANCELLED: []
+};
 
 interface TaskRow extends QueryResultRow {
   id: string;
@@ -31,6 +63,7 @@ interface TaskRow extends QueryResultRow {
   request_description: string;
   status: TaskStatus;
   accepted_at: Date | string | null;
+  expected_completion_date: Date | string | null;
   created_at: Date | string;
   updated_at: Date | string;
   customer_full_name: string;
@@ -74,6 +107,29 @@ interface AcceptCandidateRow extends QueryResultRow {
   status: TaskStatus;
   assigned_agent_user_id: string | null;
   distance_meters: string | number;
+}
+
+interface LifecycleTaskRow extends QueryResultRow {
+  id: string;
+  customer_user_id: string;
+  assigned_agent_user_id: string | null;
+  status: TaskStatus;
+  expected_completion_date: Date | string | null;
+}
+
+interface TaskStatusHistoryRow extends QueryResultRow {
+  id: string;
+  task_id: string;
+  actor_user_id: string;
+  actor_role: string;
+  actor_full_name: string;
+  actor_phone_number: string;
+  event_type: TaskTimelineEventType;
+  from_status: TaskStatus | null;
+  to_status: TaskStatus;
+  note: string | null;
+  expected_completion_date: Date | string | null;
+  created_at: Date | string;
 }
 
 interface AgentLocation {
@@ -141,6 +197,14 @@ export class TasksService {
       for (const document of dto.supportingDocuments ?? []) {
         await this.createSupportingDocumentPlaceholder(client, user.id, task.id, document);
       }
+
+      await this.writeStatusHistory(client, {
+        taskId: task.id,
+        actor: user,
+        fromStatus: null,
+        toStatus: "CREATED",
+        note: "Task created"
+      });
 
       return task;
     });
@@ -284,6 +348,14 @@ export class TasksService {
         [taskId, user.id]
       );
 
+      await this.writeStatusHistory(client, {
+        taskId: candidate.id,
+        actor: user,
+        fromStatus: candidate.status,
+        toStatus: "ACCEPTED",
+        note: "Task accepted"
+      });
+
       await this.communication.ensureRoomForAcceptedTask(candidate.id, client);
 
       return candidate.id;
@@ -303,6 +375,200 @@ export class TasksService {
     });
 
     return this.getTaskById(user, acceptedTaskId);
+  }
+
+  async confirmDeal(
+    user: AuthenticatedUser,
+    taskId: string,
+    dto: TaskLifecycleNoteDto,
+    context: RequestContext
+  ) {
+    const confirmedTaskId = await this.database.transaction(async (client) => {
+      const task = await this.getLifecycleTaskForUpdate(client, taskId);
+      this.assertTaskCustomer(task, user, "confirm this task");
+      await this.applyStatusTransition(client, task, user, "DEAL_CONFIRMED", dto.note);
+      return task.id;
+    });
+
+    await this.audit.write({
+      actorUserId: user.id,
+      action: "TASK_DEAL_CONFIRMED",
+      entityType: "document_tasks",
+      entityId: confirmedTaskId,
+      afterData: { status: "DEAL_CONFIRMED", note: this.cleanNote(dto.note) },
+      context
+    });
+
+    return this.getTaskById(user, confirmedTaskId);
+  }
+
+  async setExpectedCompletionDate(
+    user: AuthenticatedUser,
+    taskId: string,
+    dto: ExpectedCompletionDateDto,
+    context: RequestContext
+  ) {
+    const expectedCompletionDate = this.normalizeExpectedDate(dto.expectedCompletionDate);
+    const updatedTaskId = await this.database.transaction(async (client) => {
+      const task = await this.getLifecycleTaskForUpdate(client, taskId);
+      this.assertTaskAgent(task, user, "set the expected completion date");
+      this.assertTaskIsActiveForExpectedDate(task);
+
+      await client.query(
+        `UPDATE document_tasks
+         SET expected_completion_date = $2, updated_at = NOW()
+         WHERE id = $1`,
+        [task.id, expectedCompletionDate]
+      );
+
+      await this.writeStatusHistory(client, {
+        taskId: task.id,
+        actor: user,
+        eventType: "EXPECTED_DATE_UPDATED",
+        fromStatus: task.status,
+        toStatus: task.status,
+        note: dto.note,
+        expectedCompletionDate
+      });
+
+      return task.id;
+    });
+
+    await this.audit.write({
+      actorUserId: user.id,
+      action: "TASK_EXPECTED_COMPLETION_DATE_SET",
+      entityType: "document_tasks",
+      entityId: updatedTaskId,
+      afterData: {
+        expectedCompletionDate,
+        note: this.cleanNote(dto.note)
+      },
+      context
+    });
+
+    return this.getTaskById(user, updatedTaskId);
+  }
+
+  async updateProgressStatus(
+    user: AuthenticatedUser,
+    taskId: string,
+    dto: UpdateTaskStatusDto,
+    context: RequestContext
+  ) {
+    const updatedTaskId = await this.database.transaction(async (client) => {
+      const task = await this.getLifecycleTaskForUpdate(client, taskId);
+      this.assertTaskAgent(task, user, "update task progress");
+      await this.applyStatusTransition(client, task, user, dto.status, dto.note);
+      return task.id;
+    });
+
+    await this.audit.write({
+      actorUserId: user.id,
+      action: "TASK_PROGRESS_UPDATED",
+      entityType: "document_tasks",
+      entityId: updatedTaskId,
+      afterData: { status: dto.status, note: this.cleanNote(dto.note) },
+      context
+    });
+
+    return this.getTaskById(user, updatedTaskId);
+  }
+
+  async completeTask(
+    user: AuthenticatedUser,
+    taskId: string,
+    dto: TaskLifecycleNoteDto,
+    context: RequestContext
+  ) {
+    const completedTaskId = await this.database.transaction(async (client) => {
+      const task = await this.getLifecycleTaskForUpdate(client, taskId);
+      this.assertTaskCustomer(task, user, "complete this task");
+      await this.applyStatusTransition(client, task, user, "COMPLETED", dto.note);
+      return task.id;
+    });
+
+    await this.audit.write({
+      actorUserId: user.id,
+      action: "TASK_COMPLETED",
+      entityType: "document_tasks",
+      entityId: completedTaskId,
+      afterData: { status: "COMPLETED", note: this.cleanNote(dto.note) },
+      context
+    });
+
+    return this.getTaskById(user, completedTaskId);
+  }
+
+  async cancelTask(
+    user: AuthenticatedUser,
+    taskId: string,
+    dto: TaskLifecycleNoteDto,
+    context: RequestContext
+  ) {
+    const cancelledTaskId = await this.database.transaction(async (client) => {
+      const task = await this.getLifecycleTaskForUpdate(client, taskId);
+      this.assertTaskCustomer(task, user, "cancel this task");
+      await this.applyStatusTransition(client, task, user, "CANCELLED", dto.note);
+      return task.id;
+    });
+
+    await this.audit.write({
+      actorUserId: user.id,
+      action: "TASK_CANCELLED",
+      entityType: "document_tasks",
+      entityId: cancelledTaskId,
+      afterData: { status: "CANCELLED", note: this.cleanNote(dto.note) },
+      context
+    });
+
+    return this.getTaskById(user, cancelledTaskId);
+  }
+
+  async getTaskTimeline(user: AuthenticatedUser, taskId: string) {
+    const task = await this.getLifecycleTask(taskId);
+    this.assertTaskParticipant(task, user, "view this task timeline");
+
+    const result = await this.database.query<TaskStatusHistoryRow>(
+      `SELECT
+         history.id,
+         history.task_id,
+         history.actor_user_id,
+         history.actor_role,
+         actor_user.full_name AS actor_full_name,
+         actor_user.phone_number AS actor_phone_number,
+         history.event_type,
+         history.from_status::text AS from_status,
+         history.to_status::text AS to_status,
+         history.note,
+         history.expected_completion_date,
+         history.created_at
+       FROM task_status_history history
+       JOIN users actor_user ON actor_user.id = history.actor_user_id
+       WHERE history.task_id = $1
+       ORDER BY history.created_at ASC, history.id ASC`,
+      [task.id]
+    );
+
+    return {
+      taskId: task.id,
+      currentStatus: task.status,
+      expectedCompletionDate: this.dateOnlyOrNull(task.expected_completion_date),
+      events: result.rows.map((row) => ({
+        id: row.id,
+        eventType: row.event_type,
+        fromStatus: row.from_status,
+        toStatus: row.to_status,
+        note: row.note,
+        expectedCompletionDate: this.dateOnlyOrNull(row.expected_completion_date),
+        actor: {
+          userId: row.actor_user_id,
+          role: row.actor_role,
+          fullName: row.actor_full_name,
+          phoneNumber: row.actor_phone_number
+        },
+        createdAt: this.dateOrNull(row.created_at)
+      }))
+    };
   }
 
   private async createSupportingDocumentPlaceholder(
@@ -345,6 +611,159 @@ export class TasksService {
        ON CONFLICT (task_id, file_metadata_id) DO NOTHING`,
       [taskId, file.id]
     );
+  }
+
+  private async getLifecycleTaskForUpdate(client: Pick<PoolClient, "query">, taskId: string) {
+    const result = await client.query<LifecycleTaskRow>(
+      `SELECT
+         id,
+         customer_user_id,
+         assigned_agent_user_id,
+         status::text AS status,
+         expected_completion_date
+       FROM document_tasks
+       WHERE id = $1
+       FOR UPDATE`,
+      [taskId]
+    );
+
+    const task = result.rows[0];
+    if (!task) {
+      throw new NotFoundException("Task not found");
+    }
+    return task;
+  }
+
+  private async getLifecycleTask(taskId: string) {
+    const result = await this.database.query<LifecycleTaskRow>(
+      `SELECT
+         id,
+         customer_user_id,
+         assigned_agent_user_id,
+         status::text AS status,
+         expected_completion_date
+       FROM document_tasks
+       WHERE id = $1`,
+      [taskId]
+    );
+
+    const task = result.rows[0];
+    if (!task) {
+      throw new NotFoundException("Task not found");
+    }
+    return task;
+  }
+
+  private async applyStatusTransition(
+    client: Pick<PoolClient, "query">,
+    task: LifecycleTaskRow,
+    actor: AuthenticatedUser,
+    toStatus: TaskStatus,
+    note?: string
+  ) {
+    this.assertTransition(task.status, toStatus);
+
+    await client.query(
+      `UPDATE document_tasks
+       SET status = $2, updated_at = NOW()
+       WHERE id = $1`,
+      [task.id, toStatus]
+    );
+
+    await this.writeStatusHistory(client, {
+      taskId: task.id,
+      actor,
+      fromStatus: task.status,
+      toStatus,
+      note
+    });
+  }
+
+  private async writeStatusHistory(
+    client: Pick<PoolClient, "query">,
+    entry: {
+      taskId: string;
+      actor: AuthenticatedUser;
+      eventType?: TaskTimelineEventType;
+      fromStatus: TaskStatus | null;
+      toStatus: TaskStatus;
+      note?: string;
+      expectedCompletionDate?: string | null;
+    }
+  ) {
+    await client.query(
+      `INSERT INTO task_status_history (
+         task_id,
+         actor_user_id,
+         actor_role,
+         event_type,
+         from_status,
+         to_status,
+         note,
+         expected_completion_date
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        entry.taskId,
+        entry.actor.id,
+        entry.actor.role,
+        entry.eventType ?? "STATUS_CHANGE",
+        entry.fromStatus,
+        entry.toStatus,
+        this.cleanNote(entry.note),
+        entry.expectedCompletionDate ?? null
+      ]
+    );
+  }
+
+  private assertTransition(fromStatus: TaskStatus, toStatus: TaskStatus) {
+    if (!TASK_STATUS_TRANSITIONS[fromStatus].includes(toStatus)) {
+      throw new ConflictException(`Cannot move task from ${fromStatus} to ${toStatus}`);
+    }
+  }
+
+  private assertTaskCustomer(task: LifecycleTaskRow, user: AuthenticatedUser, action: string) {
+    if (user.role !== "CUSTOMER" || task.customer_user_id !== user.id) {
+      throw new ForbiddenException(`Only the task customer can ${action}`);
+    }
+  }
+
+  private assertTaskAgent(task: LifecycleTaskRow, user: AuthenticatedUser, action: string) {
+    if (user.role !== "AGENT" || task.assigned_agent_user_id !== user.id) {
+      throw new ForbiddenException(`Only the assigned agent can ${action}`);
+    }
+  }
+
+  private assertTaskParticipant(task: LifecycleTaskRow, user: AuthenticatedUser, action: string) {
+    const isCustomer = user.role === "CUSTOMER" && task.customer_user_id === user.id;
+    const isAssignedAgent = user.role === "AGENT" && task.assigned_agent_user_id === user.id;
+    if (!isCustomer && !isAssignedAgent) {
+      throw new ForbiddenException(`Only task participants can ${action}`);
+    }
+  }
+
+  private assertTaskIsActiveForExpectedDate(task: LifecycleTaskRow) {
+    if (task.status === "CREATED" || task.status === "COMPLETED" || task.status === "CANCELLED") {
+      throw new ConflictException(`Cannot set expected completion date while task is ${task.status}`);
+    }
+  }
+
+  private normalizeExpectedDate(value: string) {
+    const dateOnly = value.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (dateOnly) {
+      return dateOnly[1];
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      throw new BadRequestException("Expected completion date must be a valid date");
+    }
+    return parsed.toISOString().slice(0, 10);
+  }
+
+  private cleanNote(note?: string) {
+    const clean = note?.trim();
+    return clean ? clean : null;
   }
 
   private async getAgentPermanentLocation(userId: string): Promise<AgentLocation> {
@@ -420,6 +839,7 @@ export class TasksService {
         t.request_description,
         t.status::text AS status,
         t.accepted_at,
+        t.expected_completion_date,
         t.created_at,
         t.updated_at,
         customer_user.full_name AS customer_full_name,
@@ -491,6 +911,7 @@ export class TasksService {
       },
       requestDescription: row.request_description,
       status: row.status,
+      expectedCompletionDate: this.dateOnlyOrNull(row.expected_completion_date),
       customer,
       assignedAgent: row.assigned_agent_user_id
         ? {
@@ -541,5 +962,18 @@ export class TasksService {
 
   private dateOrNull(value: Date | string | null) {
     return value ? new Date(value).toISOString() : null;
+  }
+
+  private dateOnlyOrNull(value: Date | string | null) {
+    if (!value) {
+      return null;
+    }
+    if (value instanceof Date) {
+      const year = value.getFullYear();
+      const month = String(value.getMonth() + 1).padStart(2, "0");
+      const day = String(value.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+    return String(value).slice(0, 10);
   }
 }

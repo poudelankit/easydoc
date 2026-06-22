@@ -1,4 +1,4 @@
-import { ConflictException } from "@nestjs/common";
+import { ConflictException, ForbiddenException } from "@nestjs/common";
 import { AuditService } from "../audit/audit.service";
 import { CommunicationService } from "../communication/communication.service";
 import { DatabaseService } from "../database/database.service";
@@ -17,6 +17,12 @@ const agentUser = {
   id: "agent-user-id",
   phoneNumber: "+9779800000002",
   role: "AGENT" as const
+};
+
+const unrelatedCustomerUser = {
+  id: "other-customer-user-id",
+  phoneNumber: "+9779800000003",
+  role: "CUSTOMER" as const
 };
 
 function createMocks() {
@@ -68,6 +74,7 @@ function taskRow(overrides: Record<string, unknown> = {}) {
     request_description: "Please collect and verify my document.",
     status: "CREATED",
     accepted_at: null,
+    expected_completion_date: null,
     created_at: "2026-06-21T00:00:00.000Z",
     updated_at: "2026-06-21T00:00:00.000Z",
     customer_full_name: "Sita Customer",
@@ -81,6 +88,17 @@ function taskRow(overrides: Record<string, unknown> = {}) {
     assigned_agent_permanent_longitude: null,
     supporting_documents: [],
     distance_meters: null,
+    ...overrides
+  };
+}
+
+function lifecycleTaskRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "task-id",
+    customer_user_id: customerUser.id,
+    assigned_agent_user_id: agentUser.id,
+    status: "ACCEPTED",
+    expected_completion_date: null,
     ...overrides
   };
 }
@@ -131,6 +149,7 @@ describe("TasksService", () => {
           }
         ]
       })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({
         rows: [
@@ -219,6 +238,7 @@ describe("TasksService", () => {
         ]
       })
       .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({
         rows: [
           taskRow({
@@ -268,5 +288,260 @@ describe("TasksService", () => {
       });
 
     await expect(service.acceptTask(agentUser, "task-id", {})).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it("lets the task customer confirm the deal from accepted state", async () => {
+    const { audit, query, service } = createMocks();
+    query
+      .mockResolvedValueOnce({ rows: [lifecycleTaskRow({ status: "ACCEPTED" })] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [
+          taskRow({
+            status: "DEAL_CONFIRMED",
+            assigned_agent_user_id: agentUser.id,
+            assigned_agent_full_name: "Hari Agent",
+            assigned_agent_phone_number: agentUser.phoneNumber
+          })
+        ]
+      });
+
+    const result = (await service.confirmDeal(customerUser, "task-id", { note: "Start the work" }, {})) as {
+      status: string;
+    };
+
+    expect(query.mock.calls[1][0]).toContain("UPDATE document_tasks");
+    expect(query.mock.calls[2][1]).toEqual([
+      "task-id",
+      customerUser.id,
+      "CUSTOMER",
+      "STATUS_CHANGE",
+      "ACCEPTED",
+      "DEAL_CONFIRMED",
+      "Start the work",
+      null
+    ]);
+    expect(result.status).toBe("DEAL_CONFIRMED");
+    expect(audit.write).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "TASK_DEAL_CONFIRMED" })
+    );
+  });
+
+  it("lets the assigned agent set the expected completion date", async () => {
+    const { audit, query, service } = createMocks();
+    query
+      .mockResolvedValueOnce({ rows: [lifecycleTaskRow({ status: "DEAL_CONFIRMED" })] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [
+          taskRow({
+            status: "DEAL_CONFIRMED",
+            assigned_agent_user_id: agentUser.id,
+            expected_completion_date: "2026-07-10"
+          })
+        ]
+      });
+
+    const result = (await service.setExpectedCompletionDate(
+      agentUser,
+      "task-id",
+      {
+        expectedCompletionDate: "2026-07-10",
+        note: "Expected after office visit"
+      },
+      {}
+    )) as { expectedCompletionDate: string };
+
+    expect(query.mock.calls[1][0]).toContain("expected_completion_date");
+    expect(query.mock.calls[2][1]).toEqual([
+      "task-id",
+      agentUser.id,
+      "AGENT",
+      "EXPECTED_DATE_UPDATED",
+      "DEAL_CONFIRMED",
+      "DEAL_CONFIRMED",
+      "Expected after office visit",
+      "2026-07-10"
+    ]);
+    expect(result.expectedCompletionDate).toBe("2026-07-10");
+    expect(audit.write).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "TASK_EXPECTED_COMPLETION_DATE_SET" })
+    );
+  });
+
+  it("lets the assigned agent update progress with valid transitions", async () => {
+    const { audit, query, service } = createMocks();
+    query
+      .mockResolvedValueOnce({ rows: [lifecycleTaskRow({ status: "DEAL_CONFIRMED" })] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [
+          taskRow({
+            status: "IN_PROGRESS",
+            assigned_agent_user_id: agentUser.id
+          })
+        ]
+      });
+
+    const result = (await service.updateProgressStatus(
+      agentUser,
+      "task-id",
+      { status: "IN_PROGRESS", note: "Work started" },
+      {}
+    )) as { status: string };
+
+    expect(result.status).toBe("IN_PROGRESS");
+    expect(query.mock.calls[2][1]).toEqual([
+      "task-id",
+      agentUser.id,
+      "AGENT",
+      "STATUS_CHANGE",
+      "DEAL_CONFIRMED",
+      "IN_PROGRESS",
+      "Work started",
+      null
+    ]);
+    expect(audit.write).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "TASK_PROGRESS_UPDATED" })
+    );
+  });
+
+  it("lets the customer complete a delivered task", async () => {
+    const { audit, query, service } = createMocks();
+    query
+      .mockResolvedValueOnce({ rows: [lifecycleTaskRow({ status: "DELIVERED" })] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [
+          taskRow({
+            status: "COMPLETED",
+            assigned_agent_user_id: agentUser.id
+          })
+        ]
+      });
+
+    const result = (await service.completeTask(
+      customerUser,
+      "task-id",
+      { note: "Received the document" },
+      {}
+    )) as { status: string };
+
+    expect(result.status).toBe("COMPLETED");
+    expect(query.mock.calls[2][1]).toEqual([
+      "task-id",
+      customerUser.id,
+      "CUSTOMER",
+      "STATUS_CHANGE",
+      "DELIVERED",
+      "COMPLETED",
+      "Received the document",
+      null
+    ]);
+    expect(audit.write).toHaveBeenCalledWith(expect.objectContaining({ action: "TASK_COMPLETED" }));
+  });
+
+  it("lets the customer cancel before active progress starts", async () => {
+    const { audit, query, service } = createMocks();
+    query
+      .mockResolvedValueOnce({ rows: [lifecycleTaskRow({ status: "ACCEPTED" })] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [
+          taskRow({
+            status: "CANCELLED",
+            assigned_agent_user_id: agentUser.id
+          })
+        ]
+      });
+
+    const result = (await service.cancelTask(
+      customerUser,
+      "task-id",
+      { note: "No longer needed" },
+      {}
+    )) as { status: string };
+
+    expect(result.status).toBe("CANCELLED");
+    expect(audit.write).toHaveBeenCalledWith(expect.objectContaining({ action: "TASK_CANCELLED" }));
+  });
+
+  it("rejects invalid lifecycle transitions", async () => {
+    const { query, service } = createMocks();
+    query.mockResolvedValueOnce({ rows: [lifecycleTaskRow({ status: "ACCEPTED" })] });
+
+    await expect(
+      service.updateProgressStatus(agentUser, "task-id", { status: "IN_PROGRESS" }, {})
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it("blocks unrelated users from lifecycle updates", async () => {
+    const { query, service } = createMocks();
+    query.mockResolvedValueOnce({ rows: [lifecycleTaskRow({ status: "ACCEPTED" })] });
+
+    await expect(
+      service.confirmDeal(unrelatedCustomerUser, "task-id", { note: "Not my task" }, {})
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it("returns task timeline history for a participant", async () => {
+    const { query, service } = createMocks();
+    query
+      .mockResolvedValueOnce({
+        rows: [
+          lifecycleTaskRow({
+            status: "IN_PROGRESS",
+            expected_completion_date: "2026-07-10"
+          })
+        ]
+      })
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            id: "history-1",
+            task_id: "task-id",
+            actor_user_id: customerUser.id,
+            actor_role: "CUSTOMER",
+            actor_full_name: "Sita Customer",
+            actor_phone_number: customerUser.phoneNumber,
+            event_type: "STATUS_CHANGE",
+            from_status: null,
+            to_status: "CREATED",
+            note: "Task created",
+            expected_completion_date: null,
+            created_at: "2026-06-21T00:00:00.000Z"
+          },
+          {
+            id: "history-2",
+            task_id: "task-id",
+            actor_user_id: agentUser.id,
+            actor_role: "AGENT",
+            actor_full_name: "Hari Agent",
+            actor_phone_number: agentUser.phoneNumber,
+            event_type: "STATUS_CHANGE",
+            from_status: "DEAL_CONFIRMED",
+            to_status: "IN_PROGRESS",
+            note: "Work started",
+            expected_completion_date: null,
+            created_at: "2026-06-21T00:10:00.000Z"
+          }
+        ]
+      });
+
+    const timeline = (await service.getTaskTimeline(customerUser, "task-id")) as {
+      currentStatus: string;
+      expectedCompletionDate: string;
+      events: Array<{ toStatus: string; actor: { userId: string } }>;
+    };
+
+    expect(timeline.currentStatus).toBe("IN_PROGRESS");
+    expect(timeline.expectedCompletionDate).toBe("2026-07-10");
+    expect(timeline.events.map((event) => event.toStatus)).toEqual(["CREATED", "IN_PROGRESS"]);
+    expect(timeline.events[1].actor.userId).toBe(agentUser.id);
   });
 });

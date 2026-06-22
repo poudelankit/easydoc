@@ -5,6 +5,11 @@ import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { AuthenticatedUser } from "../../common/types/authenticated-user";
 import { CreateTaskDto } from "./dto/create-task.dto";
+import {
+  ExpectedCompletionDateDto,
+  TaskLifecycleNoteDto,
+  UpdateTaskStatusDto
+} from "./dto/task-lifecycle.dto";
 import { TasksService } from "./tasks.service";
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -27,6 +32,72 @@ export class TasksController {
   @Get("me")
   getMyTasks(@CurrentUser() user: AuthenticatedUser) {
     return this.tasksService.getMyTasks(user);
+  }
+
+  @Roles("CUSTOMER")
+  @Post(":id/confirm-deal")
+  confirmDeal(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("id", ParseUUIDPipe) taskId: string,
+    @Body() dto: TaskLifecycleNoteDto,
+    @Ip() ipAddress: string,
+    @Headers("user-agent") userAgent?: string
+  ) {
+    return this.tasksService.confirmDeal(user, taskId, dto, { ipAddress, userAgent });
+  }
+
+  @Roles("AGENT")
+  @Post(":id/expected-date")
+  setExpectedCompletionDate(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("id", ParseUUIDPipe) taskId: string,
+    @Body() dto: ExpectedCompletionDateDto,
+    @Ip() ipAddress: string,
+    @Headers("user-agent") userAgent?: string
+  ) {
+    return this.tasksService.setExpectedCompletionDate(user, taskId, dto, { ipAddress, userAgent });
+  }
+
+  @Roles("AGENT")
+  @Post(":id/status")
+  updateStatus(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("id", ParseUUIDPipe) taskId: string,
+    @Body() dto: UpdateTaskStatusDto,
+    @Ip() ipAddress: string,
+    @Headers("user-agent") userAgent?: string
+  ) {
+    return this.tasksService.updateProgressStatus(user, taskId, dto, { ipAddress, userAgent });
+  }
+
+  @Roles("CUSTOMER", "AGENT")
+  @Get(":id/timeline")
+  getTimeline(@CurrentUser() user: AuthenticatedUser, @Param("id", ParseUUIDPipe) taskId: string) {
+    return this.tasksService.getTaskTimeline(user, taskId);
+  }
+
+  @Roles("CUSTOMER")
+  @Post(":id/complete")
+  completeTask(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("id", ParseUUIDPipe) taskId: string,
+    @Body() dto: TaskLifecycleNoteDto,
+    @Ip() ipAddress: string,
+    @Headers("user-agent") userAgent?: string
+  ) {
+    return this.tasksService.completeTask(user, taskId, dto, { ipAddress, userAgent });
+  }
+
+  @Roles("CUSTOMER")
+  @Post(":id/cancel")
+  cancelTask(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("id", ParseUUIDPipe) taskId: string,
+    @Body() dto: TaskLifecycleNoteDto,
+    @Ip() ipAddress: string,
+    @Headers("user-agent") userAgent?: string
+  ) {
+    return this.tasksService.cancelTask(user, taskId, dto, { ipAddress, userAgent });
   }
 
   @Roles("CUSTOMER", "AGENT")
