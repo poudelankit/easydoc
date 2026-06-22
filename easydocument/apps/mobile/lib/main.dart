@@ -526,9 +526,9 @@ class _PlaceholderList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
+      children: [
         _StatusChip(label: 'Citizenship front placeholder'),
         SizedBox(height: 8),
         _StatusChip(label: 'Citizenship back placeholder'),

@@ -21,11 +21,41 @@ Prerequisite: install the Flutter SDK and make sure `flutter --version` works be
 
 ```bash
 flutter pub get
-flutter run
+flutter analyze
+flutter test
 ```
 
-Run tests:
+## Local Linux Validation
+
+Linux desktop support is included only as a local validation target.
+
+Prerequisites:
+
+- Flutter Linux desktop support enabled.
+- Linux desktop build toolchain available; verify with `flutter doctor`.
+
+Run locally:
 
 ```bash
-flutter test
+flutter run -d linux
+```
+
+## Android Setup
+
+Android platform support is included, but emulator/device testing requires the Android SDK.
+
+Install Android Studio or Android command-line tools, then make sure these are available:
+
+- Android SDK.
+- Android SDK Platform Tools.
+- Android SDK Build Tools.
+- An Android emulator image or a USB-connected Android device.
+
+After installing Android tooling:
+
+```bash
+flutter doctor --android-licenses
+flutter doctor
+flutter devices
+flutter run -d <android-device-id>
 ```
