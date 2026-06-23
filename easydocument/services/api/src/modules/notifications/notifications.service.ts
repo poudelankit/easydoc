@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { QueryResultRow } from "pg";
 import { AuthenticatedUser } from "../../common/types/authenticated-user";
+import { writeStructuredLog } from "../../common/logging/structured-logger";
 import { DatabaseService } from "../database/database.service";
 
 export const NOTIFICATION_TYPES = [
@@ -92,7 +93,20 @@ export class NotificationsService {
       this.notificationParams(input)
     );
 
-    return result.rows[0] ? this.mapNotification(result.rows[0]) : null;
+    const notification = result.rows[0] ? this.mapNotification(result.rows[0]) : null;
+    if (notification) {
+      writeStructuredLog("info", "notification.created", {
+        notificationId: notification.id,
+        recipientUserId: notification.recipientUserId,
+        actorUserId: input.actorUserId,
+        type: input.type,
+        deliveryChannel: input.deliveryChannel ?? "IN_APP",
+        relatedTaskId: input.relatedTaskId,
+        relatedDisputeId: input.relatedDisputeId,
+        relatedReviewId: input.relatedReviewId
+      });
+    }
+    return notification;
   }
 
   async createMany(inputs: CreateNotificationInput[]) {

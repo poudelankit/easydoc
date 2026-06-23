@@ -10,6 +10,7 @@ import { NotificationsModule } from "./modules/notifications/notifications.modul
 import { RedisModule } from "./modules/redis/redis.module";
 import { ReviewsModule } from "./modules/reviews/reviews.module";
 import { StorageModule } from "./modules/storage/storage.module";
+import { RateLimitModule } from "./modules/rate-limit/rate-limit.module";
 import { UsersModule } from "./modules/users/users.module";
 import { AdminModule } from "./modules/admin/admin.module";
 import { CommunicationModule } from "./modules/communication/communication.module";
@@ -21,6 +22,7 @@ import { TasksModule } from "./modules/tasks/tasks.module";
     ConfigModule.forRoot({ isGlobal: true }),
     DatabaseModule,
     RedisModule,
+    RateLimitModule,
     StorageModule,
     AuditModule,
     NotificationsModule,

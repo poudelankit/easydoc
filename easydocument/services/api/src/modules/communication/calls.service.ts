@@ -4,6 +4,7 @@ import { AuthenticatedUser, RequestContext } from "../../common/types/authentica
 import { AuditService } from "../audit/audit.service";
 import { DatabaseService } from "../database/database.service";
 import { NotificationsService } from "../notifications/notifications.service";
+import { RateLimitService } from "../rate-limit/rate-limit.service";
 import { CallEndStatus, CreateCallDto, EndCallDto } from "./dto/call.dto";
 
 type CallType = "AUDIO" | "VIDEO";
@@ -73,7 +74,8 @@ export class CallsService {
   constructor(
     private readonly database: DatabaseService,
     private readonly audit: AuditService,
-    @Optional() private readonly notifications?: NotificationsService
+    @Optional() private readonly notifications?: NotificationsService,
+    @Optional() private readonly rateLimit?: RateLimitService
   ) {}
 
   async listCalls(taskId: string, user: AuthenticatedUser) {
@@ -95,6 +97,14 @@ export class CallsService {
     dto: CreateCallDto,
     context?: RequestContext
   ) {
+    await this.rateLimit?.enforce({
+      action: "call_request",
+      key: user.id,
+      limit: envInteger("RATE_LIMIT_CALL_REQUEST_MAX", 10),
+      windowSeconds: envInteger("RATE_LIMIT_CALL_REQUEST_WINDOW_SECONDS", 5 * 60),
+      message: "Too many call requests. Try again later."
+    });
+
     const callSession = await this.database.transaction(async (client) => {
       const task = await this.getAuthorizedTask(taskId, user, client);
       this.assertTaskCanStartCall(task);
@@ -527,4 +537,9 @@ export class CallsService {
   private dateOrNull(value: Date | string | null) {
     return value ? new Date(value).toISOString() : null;
   }
+}
+
+function envInteger(name: string, fallback: number) {
+  const value = Number(process.env[name]);
+  return Number.isInteger(value) && value > 0 ? value : fallback;
 }

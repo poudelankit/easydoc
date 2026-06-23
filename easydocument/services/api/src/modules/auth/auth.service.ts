@@ -17,6 +17,7 @@ import { RequestContext, UserRole } from "../../common/types/authenticated-user"
 import { AuditService } from "../audit/audit.service";
 import { DatabaseService } from "../database/database.service";
 import { NotificationsService } from "../notifications/notifications.service";
+import { RateLimitService } from "../rate-limit/rate-limit.service";
 import { RedisService } from "../redis/redis.service";
 import { SendOtpDto } from "./dto/send-otp.dto";
 import { VerifyOtpDto } from "./dto/verify-otp.dto";
@@ -47,17 +48,19 @@ export class AuthService {
     private readonly redis: RedisService,
     private readonly jwt: JwtService,
     private readonly audit: AuditService,
-    @Optional() private readonly notifications?: NotificationsService
+    @Optional() private readonly notifications?: NotificationsService,
+    @Optional() private readonly rateLimit?: RateLimitService
   ) {}
 
   async sendOtp(dto: SendOtpDto, context: RequestContext) {
     const phoneNumber = normalizeNepalPhone(dto.phoneNumber);
-    const rateKey = `otp:send:${phoneNumber}:${dto.purpose}`;
-    const attempts = await this.redis.incrementWithExpiry(rateKey, 10 * 60);
-
-    if (attempts > 5) {
-      throw new HttpException("Too many OTP requests. Try again later.", HttpStatus.TOO_MANY_REQUESTS);
-    }
+    await this.enforceRateLimit(
+      "otp_send",
+      `${phoneNumber}:${dto.purpose}`,
+      envInteger("RATE_LIMIT_OTP_SEND_MAX", 5),
+      envInteger("RATE_LIMIT_OTP_SEND_WINDOW_SECONDS", 10 * 60),
+      "Too many OTP requests. Try again later."
+    );
 
     const otp = process.env.SMS_PROVIDER === "local-mock" ? "123456" : String(randomInt(100000, 999999));
     const otpHash = hashWithSecret(otp, this.jwtSecret);
@@ -91,6 +94,13 @@ export class AuthService {
   async verifyOtp(dto: VerifyOtpDto, context: RequestContext) {
     const phoneNumber = normalizeNepalPhone(dto.phoneNumber);
     const purpose = dto.purpose ?? "LOGIN";
+    await this.enforceRateLimit(
+      "otp_verify",
+      `${phoneNumber}:${purpose}`,
+      envInteger("RATE_LIMIT_OTP_VERIFY_MAX", 10),
+      envInteger("RATE_LIMIT_OTP_VERIFY_WINDOW_SECONDS", 10 * 60),
+      "Too many OTP verification attempts. Try again later."
+    );
 
     const otpResult = await this.database.query<{
       id: string;
@@ -225,6 +235,24 @@ export class AuthService {
     return result.rows[0];
   }
 
+  private async enforceRateLimit(
+    action: string,
+    key: string,
+    limit: number,
+    windowSeconds: number,
+    message: string
+  ) {
+    if (this.rateLimit) {
+      await this.rateLimit.enforce({ action, key, limit, windowSeconds, message });
+      return;
+    }
+
+    const attempts = await this.redis.incrementWithExpiry(`rate:${action}:${key}`, windowSeconds);
+    if (attempts > limit) {
+      throw new HttpException(message, HttpStatus.TOO_MANY_REQUESTS);
+    }
+  }
+
   private async getUserById(userId: string): Promise<UserRow | null> {
     const result = await this.database.query<UserRow>(
       `SELECT id, phone_number, full_name, address_text, role, status
@@ -296,4 +324,9 @@ export class AuthService {
       }
     };
   }
+}
+
+function envInteger(name: string, fallback: number) {
+  const value = Number(process.env[name]);
+  return Number.isInteger(value) && value > 0 ? value : fallback;
 }

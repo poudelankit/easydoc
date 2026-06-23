@@ -4,6 +4,7 @@ import { AuthenticatedUser, RequestContext } from "../../common/types/authentica
 import { AuditService } from "../audit/audit.service";
 import { DatabaseService } from "../database/database.service";
 import { NotificationsService } from "../notifications/notifications.service";
+import { RateLimitService } from "../rate-limit/rate-limit.service";
 import { StorageService } from "../storage/storage.service";
 import {
   CommunicationAttachmentType,
@@ -69,7 +70,8 @@ export class CommunicationService {
     private readonly database: DatabaseService,
     private readonly storage: StorageService,
     private readonly audit: AuditService,
-    @Optional() private readonly notifications?: NotificationsService
+    @Optional() private readonly notifications?: NotificationsService,
+    @Optional() private readonly rateLimit?: RateLimitService
   ) {}
 
   async ensureRoomForAcceptedTask(taskId: string, client?: QueryExecutor) {
@@ -118,6 +120,13 @@ export class CommunicationService {
     context?: RequestContext
   ) {
     const room = await this.getAuthorizedRoom(taskId, user);
+    await this.rateLimit?.enforce({
+      action: "message_send",
+      key: user.id,
+      limit: envInteger("RATE_LIMIT_MESSAGE_SEND_MAX", 60),
+      windowSeconds: envInteger("RATE_LIMIT_MESSAGE_SEND_WINDOW_SECONDS", 60),
+      message: "Too many messages. Try again shortly."
+    });
     const body = dto.body.trim();
     if (!body) {
       throw new BadRequestException("Message body is required");
@@ -559,4 +568,9 @@ export class CommunicationService {
   private dateToIso(value: Date | string) {
     return new Date(value).toISOString();
   }
+}
+
+function envInteger(name: string, fallback: number) {
+  const value = Number(process.env[name]);
+  return Number.isInteger(value) && value > 0 ? value : fallback;
 }

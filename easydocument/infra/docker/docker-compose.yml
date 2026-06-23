@@ -52,6 +52,65 @@ services:
       timeout: 5s
       retries: 5
 
+  api:
+    profiles: ["app"]
+    build:
+      context: ../..
+      dockerfile: services/api/Dockerfile
+    container_name: easydocument-api
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3000
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:8080}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-easydoc}:${POSTGRES_PASSWORD:-easydoc_dev_password}@postgres:5432/${POSTGRES_DB:-easydocument}
+      REDIS_URL: redis://redis:6379
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: "false"
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      MINIO_BUCKET_KYC: ${MINIO_BUCKET_KYC:-easydocument-kyc}
+      MINIO_BUCKET_CHAT: ${MINIO_BUCKET_CHAT:-easydocument-chat}
+      MINIO_BUCKET_EXPORTS: ${MINIO_BUCKET_EXPORTS:-easydocument-exports}
+      JWT_SECRET: ${JWT_SECRET:-replace-with-strong-local-secret}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-30d}
+      SMS_PROVIDER: ${SMS_PROVIDER:-local-mock}
+    ports:
+      - "${API_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/health/ready').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  admin:
+    profiles: ["app"]
+    build:
+      context: ../..
+      dockerfile: apps/admin/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/v1}
+        VITE_SOCKET_URL: ${VITE_SOCKET_URL:-http://localhost:3000}
+    container_name: easydocument-admin
+    ports:
+      - "${ADMIN_PROD_PORT:-8080}:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health/live || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
 volumes:
   easydocument_postgres_data:
     name: easydocument_postgres_data

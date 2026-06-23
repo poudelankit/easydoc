@@ -4,6 +4,7 @@ import { AuthenticatedUser, RequestContext } from "../../common/types/authentica
 import { AuditService } from "../audit/audit.service";
 import { DatabaseService } from "../database/database.service";
 import { NotificationsService } from "../notifications/notifications.service";
+import { RateLimitService } from "../rate-limit/rate-limit.service";
 import {
   AddMediationNoteDto,
   DISPUTE_STATUSES,
@@ -122,7 +123,8 @@ export class DisputesService {
   constructor(
     private readonly database: DatabaseService,
     private readonly audit: AuditService,
-    @Optional() private readonly notifications?: NotificationsService
+    @Optional() private readonly notifications?: NotificationsService,
+    @Optional() private readonly rateLimit?: RateLimitService
   ) {}
 
   async createTaskDispute(
@@ -132,6 +134,13 @@ export class DisputesService {
     context: RequestContext
   ) {
     this.assertParticipantRole(user);
+    await this.rateLimit?.enforce({
+      action: "dispute_create",
+      key: user.id,
+      limit: envInteger("RATE_LIMIT_DISPUTE_CREATE_MAX", 5),
+      windowSeconds: envInteger("RATE_LIMIT_DISPUTE_CREATE_WINDOW_SECONDS", 60 * 60),
+      message: "Too many disputes created. Try again later."
+    });
     const disputeId = await this.database.transaction(async (client) => {
       const task = await this.loadDisputableTask(client, taskId, true);
       this.assertTaskParticipant(task, user);
@@ -847,4 +856,9 @@ export class DisputesService {
     }
     return new Date(value).toISOString().slice(0, 10);
   }
+}
+
+function envInteger(name: string, fallback: number) {
+  const value = Number(process.env[name]);
+  return Number.isInteger(value) && value > 0 ? value : fallback;
 }

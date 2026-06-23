@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { DatabaseService } from "../database/database.service";
 import { RequestContext } from "../../common/types/authenticated-user";
+import { writeStructuredLog } from "../../common/logging/structured-logger";
 
 @Injectable()
 export class AuditService {
@@ -30,5 +31,13 @@ export class AuditService {
         params.afterData ? JSON.stringify(params.afterData) : null
       ]
     );
+
+    writeStructuredLog("info", "audit.action", {
+      actorUserId: params.actorUserId,
+      action: params.action,
+      entityType: params.entityType,
+      entityId: params.entityId,
+      ipAddress: params.context?.ipAddress
+    });
   }
 }

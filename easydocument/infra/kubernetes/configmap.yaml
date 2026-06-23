@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: easydocument-config
+data:
+  NODE_ENV: "production"
+  PORT: "3000"
+  CORS_ORIGIN: "https://admin.easydocument.example"
+  MINIO_PORT: "9000"
+  MINIO_USE_SSL: "true"
+  MINIO_BUCKET_KYC: "easydocument-kyc"
+  MINIO_BUCKET_CHAT: "easydocument-chat"
+  MINIO_BUCKET_EXPORTS: "easydocument-exports"
+  JWT_ACCESS_TTL: "15m"
+  JWT_REFRESH_TTL: "30d"
+  SMS_PROVIDER: "placeholder"
+  VITE_API_BASE_URL: "https://api.easydocument.example/v1"
+  VITE_SOCKET_URL: "https://api.easydocument.example"

@@ -15,7 +15,7 @@ React + TypeScript admin portal for EasyDocument operations.
 
 ## Current State
 
-This folder contains the Phase 9 React + TypeScript admin portal foundation. It includes OTP login/session storage, dashboard navigation, pending agent verification, agent profile/KYC metadata detail, approval/rejection actions, task monitoring, task detail, timeline, communication audit summaries, dispute lists, dispute details, mediation notes, status updates, dispute resolution, read-only review monitoring, and notification summary.
+This folder contains the Phase 10 React + TypeScript admin portal foundation. It includes OTP login/session storage, dashboard navigation, pending agent verification, agent profile/KYC metadata detail, approval/rejection actions, task monitoring, task detail, timeline, communication audit summaries, dispute lists, dispute details, mediation notes, status updates, dispute resolution, read-only review monitoring, notification summary, and production environment validation helpers.
 
 ## Local Setup
 
@@ -31,4 +31,23 @@ Run tests:
 
 ```bash
 npm run test --workspace @easydocument/admin
+```
+
+Production builds should provide explicit endpoints:
+
+```bash
+VITE_API_BASE_URL=https://api.easydocument.example/v1 \
+VITE_SOCKET_URL=https://api.easydocument.example \
+VITE_STRICT_ENV=true \
+npm run build --workspace @easydocument/admin
+```
+
+Build the production image from the repository root:
+
+```bash
+docker build \
+  -f apps/admin/Dockerfile \
+  --build-arg VITE_API_BASE_URL=https://api.easydocument.example/v1 \
+  --build-arg VITE_SOCKET_URL=https://api.easydocument.example \
+  -t easydocument/admin:phase10 .
 ```

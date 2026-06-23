@@ -2,10 +2,10 @@
 
 Engineering documentation for EasyDocument.
 
-Recommended Phase 1 documents:
+## Phase 10 Runbooks
 
-- Architecture decision records.
-- Environment setup.
-- Auth and profile implementation notes.
-- Local development guide.
-- Security checklist evidence.
+- `deployment.md`: production deployment flow, Docker images, Kubernetes, and health probes.
+- `backup-restore.md`: PostgreSQL and MinIO/S3 backup and restore notes.
+- `monitoring.md`: structured logging, metrics, and alerting guidance.
+- `security-checklist.md`: deployment security checklist.
+- `production-readiness-checklist.md`: final readiness checklist.

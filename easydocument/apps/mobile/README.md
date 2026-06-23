@@ -19,7 +19,7 @@ Flutter application for EasyDocument customers and agents.
 
 ## Current State
 
-This folder contains the Phase 9 Flutter shell for OTP, customer profile, agent KYC onboarding, customer task placeholders, agent task placeholders, task chat placeholders, task lifecycle placeholders, task call placeholders, task dispute placeholders, review/reputation placeholders, and notification placeholders. API integration will be wired after the backend contracts stabilize.
+This folder contains the Phase 10 Flutter shell for OTP, customer profile, agent KYC onboarding, customer task placeholders, agent task placeholders, task chat placeholders, task lifecycle placeholders, task call placeholders, task dispute placeholders, review/reputation placeholders, notification placeholders, and compile-time environment validation. API integration will be wired after the backend contracts stabilize.
 
 ## Local Setup
 
@@ -29,6 +29,16 @@ Prerequisite: install the Flutter SDK and make sure `flutter --version` works be
 flutter pub get
 flutter analyze
 flutter test
+```
+
+Production-style runs must pass compile-time configuration:
+
+```bash
+flutter run \
+  --dart-define=API_BASE_URL=https://api.easydocument.example/v1 \
+  --dart-define=SOCKET_URL=https://api.easydocument.example \
+  --dart-define=GOOGLE_MAPS_API_KEY=replace-with-real-key \
+  --dart-define=PRODUCTION=true
 ```
 
 ## Local Linux Validation

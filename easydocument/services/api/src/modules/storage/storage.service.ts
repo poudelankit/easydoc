@@ -8,8 +8,8 @@ export class StorageService {
     endPoint: process.env.MINIO_ENDPOINT ?? "localhost",
     port: Number(process.env.MINIO_PORT ?? 9000),
     useSSL: process.env.MINIO_USE_SSL === "true",
-    accessKey: process.env.MINIO_ACCESS_KEY ?? "minioadmin",
-    secretKey: process.env.MINIO_SECRET_KEY ?? "minioadmin123"
+    accessKey: process.env.MINIO_ACCESS_KEY ?? process.env.MINIO_ROOT_USER ?? "minioadmin",
+    secretKey: process.env.MINIO_SECRET_KEY ?? process.env.MINIO_ROOT_PASSWORD ?? "minioadmin123"
   });
 
   buildKycPlaceholderKey(userId: string, kind: string, extension: string): string {

@@ -19,12 +19,15 @@ Node.js + NestJS backend API for EasyDocument.
 
 ## Current State
 
-This folder contains the Phase 9 NestJS API foundation for auth, profiles, task creation, nearby task discovery, task acceptance, accepted-task communication, task lifecycle tracking, in-app call signaling metadata, admin operational management, dispute mediation, reviews, ratings, agent reputation, and stored in-app notifications.
+This folder contains the Phase 10 NestJS API foundation for auth, profiles, task creation, nearby task discovery, task acceptance, accepted-task communication, task lifecycle tracking, in-app call signaling metadata, admin operational management, dispute mediation, reviews, ratings, agent reputation, stored in-app notifications, and production readiness hardening.
 
 ## Implemented Endpoints
 
 - `GET /health/live`
 - `GET /health/ready`
+- `GET /health/database`
+- `GET /health/redis`
+- `GET /health/minio`
 - `POST /v1/auth/otp/send`
 - `POST /v1/auth/otp/verify`
 - `POST /v1/auth/refresh`
@@ -86,13 +89,16 @@ This folder contains the Phase 9 NestJS API foundation for auth, profiles, task 
 - `GET /v1/admin/reviews`
 - `GET /v1/admin/notifications/summary`
 
-## Phase 9 Notes
+## Phase 10 Notes
 
 - Customers can submit one review per completed task.
 - Review edit windows are not implemented in Phase 8 and remain a future enhancement.
 - Reputation metrics are query-calculated from completed tasks and `task_reviews`.
 - Notifications are stored in PostgreSQL and delivered through the `IN_APP` channel.
-- `SMS_PLACEHOLDER` and `PUSH_PLACEHOLDER` are schema-supported channels only; real providers are not implemented in Phase 9.
+- `SMS_PLACEHOLDER` and `PUSH_PLACEHOLDER` are schema-supported channels only; real providers are not implemented.
+- Production-like startup validates `JWT_SECRET`, `CORS_ORIGIN`, database, Redis, and MinIO configuration.
+- Backend logs are structured JSON lines for request lifecycle, errors, audits, notifications, and rate-limit checks.
+- Redis-backed rate limiting is applied to OTP send, OTP verify, message send, call request, and dispute creation.
 
 ## Socket.IO Events
 
@@ -122,4 +128,10 @@ Run tests:
 
 ```bash
 npm run test --workspace @easydocument/api
+```
+
+Build the production image from the repository root:
+
+```bash
+docker build -f services/api/Dockerfile -t easydocument/api:phase10 .
 ```

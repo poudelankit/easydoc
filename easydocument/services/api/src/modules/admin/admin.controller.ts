@@ -4,6 +4,7 @@ import { Roles } from "../../common/decorators/roles.decorator";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { AuthenticatedUser } from "../../common/types/authenticated-user";
+import { AuditService } from "../audit/audit.service";
 import {
   AddMediationNoteDto,
   ResolveDisputeDto,
@@ -25,26 +26,34 @@ export class AdminController {
     private readonly adminService: AdminService,
     private readonly disputesService: DisputesService,
     private readonly reviewsService: ReviewsService,
-    private readonly notificationsService: NotificationsService
+    private readonly notificationsService: NotificationsService,
+    private readonly audit: AuditService
   ) {}
 
   @Get("me")
-  getAdminMe(@CurrentUser() user: AuthenticatedUser) {
+  async getAdminMe(@CurrentUser() user: AuthenticatedUser) {
+    await this.auditAdminAccess(user, "ADMIN_PROFILE_ACCESSED", "users", user.id);
     return this.usersService.getProfile(user.id);
   }
 
   @Get("dashboard")
-  getDashboard() {
+  async getDashboard(@CurrentUser() user: AuthenticatedUser) {
+    await this.auditAdminAccess(user, "ADMIN_DASHBOARD_ACCESSED", "admin_dashboard");
     return this.adminService.getDashboard();
   }
 
   @Get("agents/pending")
-  listPendingAgents() {
+  async listPendingAgents(@CurrentUser() user: AuthenticatedUser) {
+    await this.auditAdminAccess(user, "ADMIN_PENDING_AGENTS_ACCESSED", "agent_profiles");
     return this.adminService.listPendingAgents();
   }
 
   @Get("agents/:agentId")
-  getAgent(@Param("agentId", ParseUUIDPipe) agentId: string) {
+  async getAgent(
+    @Param("agentId", ParseUUIDPipe) agentId: string,
+    @CurrentUser() user: AuthenticatedUser
+  ) {
+    await this.auditAdminAccess(user, "ADMIN_AGENT_ACCESSED", "agent_profiles", agentId);
     return this.adminService.getAgent(agentId);
   }
 
@@ -70,42 +79,62 @@ export class AdminController {
   }
 
   @Get("tasks")
-  listTasks(@Query("status") status?: string) {
+  async listTasks(@CurrentUser() user: AuthenticatedUser, @Query("status") status?: string) {
+    await this.auditAdminAccess(user, "ADMIN_TASKS_ACCESSED", "document_tasks");
     return this.adminService.listTasks(status);
   }
 
   @Get("tasks/:taskId")
-  getTask(@Param("taskId", ParseUUIDPipe) taskId: string) {
+  async getTask(
+    @Param("taskId", ParseUUIDPipe) taskId: string,
+    @CurrentUser() user: AuthenticatedUser
+  ) {
+    await this.auditAdminAccess(user, "ADMIN_TASK_ACCESSED", "document_tasks", taskId);
     return this.adminService.getTask(taskId);
   }
 
   @Get("tasks/:taskId/timeline")
-  getTaskTimeline(@Param("taskId", ParseUUIDPipe) taskId: string) {
+  async getTaskTimeline(
+    @Param("taskId", ParseUUIDPipe) taskId: string,
+    @CurrentUser() user: AuthenticatedUser
+  ) {
+    await this.auditAdminAccess(user, "ADMIN_TASK_TIMELINE_ACCESSED", "document_tasks", taskId);
     return this.adminService.getTaskTimeline(taskId);
   }
 
   @Get("tasks/:taskId/communication-audit")
-  getCommunicationAudit(@Param("taskId", ParseUUIDPipe) taskId: string) {
+  async getCommunicationAudit(
+    @Param("taskId", ParseUUIDPipe) taskId: string,
+    @CurrentUser() user: AuthenticatedUser
+  ) {
+    await this.auditAdminAccess(user, "ADMIN_COMMUNICATION_AUDIT_ACCESSED", "document_tasks", taskId);
     return this.adminService.getCommunicationAudit(taskId);
   }
 
   @Get("disputes")
-  listDisputes(@Query("status") status?: string) {
+  async listDisputes(@CurrentUser() user: AuthenticatedUser, @Query("status") status?: string) {
+    await this.auditAdminAccess(user, "ADMIN_DISPUTES_ACCESSED", "task_disputes");
     return this.disputesService.listAdminDisputes(status);
   }
 
   @Get("disputes/:disputeId")
-  getDispute(@Param("disputeId", ParseUUIDPipe) disputeId: string) {
+  async getDispute(
+    @Param("disputeId", ParseUUIDPipe) disputeId: string,
+    @CurrentUser() user: AuthenticatedUser
+  ) {
+    await this.auditAdminAccess(user, "ADMIN_DISPUTE_ACCESSED", "task_disputes", disputeId);
     return this.disputesService.getAdminDispute(disputeId);
   }
 
   @Get("reviews")
-  listReviews() {
+  async listReviews(@CurrentUser() user: AuthenticatedUser) {
+    await this.auditAdminAccess(user, "ADMIN_REVIEWS_ACCESSED", "task_reviews");
     return this.reviewsService.listAdminReviews();
   }
 
   @Get("notifications/summary")
-  getNotificationSummary(@CurrentUser() user: AuthenticatedUser) {
+  async getNotificationSummary(@CurrentUser() user: AuthenticatedUser) {
+    await this.auditAdminAccess(user, "ADMIN_NOTIFICATIONS_SUMMARY_ACCESSED", "notifications");
     return this.notificationsService.getAdminSummary(user);
   }
 
@@ -140,5 +169,20 @@ export class AdminController {
     @Headers("user-agent") userAgent?: string
   ) {
     return this.disputesService.resolveDispute(disputeId, user, dto, { ipAddress, userAgent });
+  }
+
+  private async auditAdminAccess(
+    user: AuthenticatedUser,
+    action: string,
+    entityType: string,
+    entityId?: string
+  ) {
+    await this.audit.write({
+      actorUserId: user.id,
+      action,
+      entityType,
+      entityId,
+      context: {}
+    });
   }
 }

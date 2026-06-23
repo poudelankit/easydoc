@@ -1,0 +1,11 @@
+**/node_modules
+**/dist
+**/build
+**/.dart_tool
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/coverage
+**/*.tsbuildinfo
+.git
+.env
+*.log

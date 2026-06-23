@@ -1,4 +1,9 @@
-import { resolveCorsOrigin, resolveJwtSecret, shouldReturnDevOtp } from "./security-env";
+import {
+  resolveCorsOrigin,
+  resolveJwtSecret,
+  shouldReturnDevOtp,
+  validateRuntimeEnvironment
+} from "./security-env";
 
 describe("security environment helpers", () => {
   const originalEnv = process.env;
@@ -48,5 +53,38 @@ describe("security environment helpers", () => {
 
     process.env.NODE_ENV = "production";
     expect(shouldReturnDevOtp()).toBe(false);
+  });
+
+  it("validates production runtime dependencies", () => {
+    process.env.NODE_ENV = "production";
+    process.env.JWT_SECRET = "phase-10-production-grade-secret";
+    process.env.CORS_ORIGIN = "https://admin.easydocument.example";
+    process.env.DATABASE_URL = "postgresql://easydoc:strong-password@postgres.example/easydocument";
+    process.env.REDIS_URL = "rediss://redis.example:6379";
+    process.env.MINIO_ENDPOINT = "minio.example";
+    process.env.MINIO_PORT = "9000";
+    process.env.MINIO_ACCESS_KEY = "prod-access-key";
+    process.env.MINIO_SECRET_KEY = "prod-secret-key";
+    process.env.MINIO_BUCKET_KYC = "easydocument-kyc";
+    process.env.MINIO_BUCKET_CHAT = "easydocument-chat";
+    process.env.MINIO_BUCKET_EXPORTS = "easydocument-exports";
+
+    expect(validateRuntimeEnvironment()).toMatchObject({ nodeEnv: "production" });
+  });
+
+  it("rejects placeholder production storage credentials", () => {
+    process.env.NODE_ENV = "production";
+    process.env.JWT_SECRET = "phase-10-production-grade-secret";
+    process.env.CORS_ORIGIN = "https://admin.easydocument.example";
+    process.env.DATABASE_URL = "postgresql://easydoc:strong-password@postgres.example/easydocument";
+    process.env.REDIS_URL = "redis://redis.example:6379";
+    process.env.MINIO_ENDPOINT = "minio.example";
+    process.env.MINIO_ACCESS_KEY = "minioadmin";
+    process.env.MINIO_SECRET_KEY = "minioadmin123";
+    process.env.MINIO_BUCKET_KYC = "easydocument-kyc";
+    process.env.MINIO_BUCKET_CHAT = "easydocument-chat";
+    process.env.MINIO_BUCKET_EXPORTS = "easydocument-exports";
+
+    expect(() => validateRuntimeEnvironment()).toThrow("MINIO_ACCESS_KEY must not use");
   });
 });

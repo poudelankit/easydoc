@@ -2,7 +2,7 @@
 
 EasyDocument is a Nepal-only document services marketplace connecting customers with verified local agents for document retrieval, submission, verification, and office follow-up work.
 
-This repository is the EasyDocument Enterprise Implementation Package monorepo. It currently contains the Phase 9 foundation for authentication, profiles, agent onboarding, task creation, nearby task discovery, task acceptance, accepted-task communication, post-acceptance task lifecycle tracking, in-app call signaling, admin operational management, dispute mediation, reviews, ratings, agent reputation, and stored in-app notifications.
+This repository is the EasyDocument Enterprise Implementation Package monorepo. It currently contains the Phase 10 foundation for authentication, profiles, agent onboarding, task creation, nearby task discovery, task acceptance, accepted-task communication, post-acceptance task lifecycle tracking, in-app call signaling, admin operational management, dispute mediation, reviews, ratings, agent reputation, stored in-app notifications, and production readiness hardening.
 
 ## Monorepo Layout
 
@@ -71,7 +71,7 @@ Stop local infrastructure:
 
 ## Current Phase
 
-Phase 9 includes the Phase 1 authentication/profile foundation, Phase 2 task creation and acceptance flow, Phase 3 task communication, Phase 4 lifecycle tracking, Phase 5 call signaling metadata, Phase 6 admin operations, Phase 7 dispute mediation, Phase 8 reviews/reputation, plus stored in-app notifications with read/unread support.
+Phase 10 adds production readiness work on top of the Phase 1-9 product foundation: stricter environment validation, structured backend logs, audit/rate-limit hardening, richer health checks, production Dockerfiles, Kubernetes samples, deployment runbooks, backup/restore notes, monitoring guidance, and security/readiness checklists.
 
 ## Local Run Commands
 
@@ -108,9 +108,17 @@ npm run test --workspace @easydocument/api
 npm run test --workspace @easydocument/admin
 ```
 
+Run production readiness validation:
+
+```bash
+npm run validate:production
+```
+
 Run the mobile app from `apps/mobile` on a machine with Flutter installed:
 
 ```bash
 flutter pub get
 flutter run
 ```
+
+Production deployment notes live in `docs/deployment.md`.

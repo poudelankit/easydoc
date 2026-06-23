@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'app_environment.dart';
+
 void main() {
+  validateMobileEnvironment(AppEnvironment.current);
   runApp(const EasyDocumentMobileApp());
 }
 
