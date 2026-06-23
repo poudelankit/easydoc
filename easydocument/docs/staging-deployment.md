@@ -25,6 +25,7 @@ Staging should mirror production closely while allowing safe mock integrations.
 ```bash
 API_BASE_URL=https://staging-api.easydocument.example \
 RUN_MOCK_OTP_FLOW=true \
+EXPECT_SMS_PROVIDER=real-sms-provider \
+EXPECT_PUSH_PROVIDER=firebase \
 ./scripts/deployment-smoke-test.sh
 ```
-

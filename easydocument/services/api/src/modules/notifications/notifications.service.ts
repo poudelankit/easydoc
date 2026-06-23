@@ -1,8 +1,9 @@
-import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { ForbiddenException, Injectable, NotFoundException, Optional } from "@nestjs/common";
 import { QueryResultRow } from "pg";
 import { AuthenticatedUser } from "../../common/types/authenticated-user";
 import { writeStructuredLog } from "../../common/logging/structured-logger";
 import { DatabaseService } from "../database/database.service";
+import { PushService } from "../push/push.service";
 
 export const NOTIFICATION_TYPES = [
   "OTP_SENT",
@@ -71,7 +72,10 @@ export interface CreateNotificationInput {
 
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly database: DatabaseService) {}
+  constructor(
+    private readonly database: DatabaseService,
+    @Optional() private readonly push?: PushService
+  ) {}
 
   async createNotification(input: CreateNotificationInput) {
     const result = await this.database.query<NotificationRow>(
@@ -105,6 +109,14 @@ export class NotificationsService {
         relatedDisputeId: input.relatedDisputeId,
         relatedReviewId: input.relatedReviewId
       });
+      if ((input.deliveryChannel ?? "IN_APP") === "PUSH_PLACEHOLDER") {
+        await this.push?.publishPlaceholder({
+          notificationId: notification.id,
+          recipientUserId: notification.recipientUserId,
+          type: notification.type,
+          title: notification.title
+        });
+      }
     }
     return notification;
   }

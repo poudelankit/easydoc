@@ -13,6 +13,13 @@ describe("security environment helpers", () => {
     delete process.env.CORS_ORIGIN;
     delete process.env.JWT_SECRET;
     delete process.env.NODE_ENV;
+    delete process.env.SMS_PROVIDER;
+    delete process.env.PUSH_PROVIDER;
+    delete process.env.SMS_PROVIDER_API_KEY;
+    delete process.env.SMS_PROVIDER_SENDER_ID;
+    delete process.env.FIREBASE_PROJECT_ID;
+    delete process.env.FIREBASE_SERVICE_ACCOUNT_SECRET_NAME;
+    delete process.env.GOOGLE_MAPS_API_KEY;
   });
 
   afterEach(() => {
@@ -68,6 +75,13 @@ describe("security environment helpers", () => {
     process.env.MINIO_BUCKET_KYC = "easydocument-kyc";
     process.env.MINIO_BUCKET_CHAT = "easydocument-chat";
     process.env.MINIO_BUCKET_EXPORTS = "easydocument-exports";
+    process.env.SMS_PROVIDER = "real-sms-provider";
+    process.env.SMS_PROVIDER_API_KEY = "prod-sms-provider-key";
+    process.env.SMS_PROVIDER_SENDER_ID = "EasyDoc";
+    process.env.PUSH_PROVIDER = "firebase";
+    process.env.FIREBASE_PROJECT_ID = "easydocument-production";
+    process.env.FIREBASE_SERVICE_ACCOUNT_SECRET_NAME = "easydocument/firebase-service-account";
+    process.env.GOOGLE_MAPS_API_KEY = "prod-google-maps-key";
 
     expect(validateRuntimeEnvironment()).toMatchObject({ nodeEnv: "production" });
   });
@@ -84,7 +98,37 @@ describe("security environment helpers", () => {
     process.env.MINIO_BUCKET_KYC = "easydocument-kyc";
     process.env.MINIO_BUCKET_CHAT = "easydocument-chat";
     process.env.MINIO_BUCKET_EXPORTS = "easydocument-exports";
+    process.env.SMS_PROVIDER = "real-sms-provider";
+    process.env.SMS_PROVIDER_API_KEY = "prod-sms-provider-key";
+    process.env.SMS_PROVIDER_SENDER_ID = "EasyDoc";
+    process.env.PUSH_PROVIDER = "firebase";
+    process.env.FIREBASE_PROJECT_ID = "easydocument-production";
+    process.env.FIREBASE_SERVICE_ACCOUNT_SECRET_NAME = "easydocument/firebase-service-account";
+    process.env.GOOGLE_MAPS_API_KEY = "prod-google-maps-key";
 
     expect(() => validateRuntimeEnvironment()).toThrow("MINIO_ACCESS_KEY must not use");
+  });
+
+  it("rejects local delivery providers outside local development", () => {
+    process.env.NODE_ENV = "production";
+    process.env.JWT_SECRET = "phase-12-production-grade-secret";
+    process.env.CORS_ORIGIN = "https://admin.easydocument.example";
+    process.env.DATABASE_URL = "postgresql://easydoc:strong-password@postgres.example/easydocument";
+    process.env.REDIS_URL = "rediss://redis.example:6379";
+    process.env.MINIO_ENDPOINT = "minio.example";
+    process.env.MINIO_ACCESS_KEY = "prod-access-key";
+    process.env.MINIO_SECRET_KEY = "prod-secret-key";
+    process.env.MINIO_BUCKET_KYC = "easydocument-kyc";
+    process.env.MINIO_BUCKET_CHAT = "easydocument-chat";
+    process.env.MINIO_BUCKET_EXPORTS = "easydocument-exports";
+    process.env.SMS_PROVIDER = "local-mock";
+    process.env.SMS_PROVIDER_API_KEY = "prod-sms-provider-key";
+    process.env.SMS_PROVIDER_SENDER_ID = "EasyDoc";
+    process.env.PUSH_PROVIDER = "placeholder";
+    process.env.FIREBASE_PROJECT_ID = "easydocument-production";
+    process.env.FIREBASE_SERVICE_ACCOUNT_SECRET_NAME = "easydocument/firebase-service-account";
+    process.env.GOOGLE_MAPS_API_KEY = "prod-google-maps-key";
+
+    expect(() => validateRuntimeEnvironment()).toThrow("SMS_PROVIDER must not be local-mock");
   });
 });

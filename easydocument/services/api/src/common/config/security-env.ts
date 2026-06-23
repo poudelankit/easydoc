@@ -2,8 +2,12 @@ const LOCAL_DEVELOPMENT_JWT_SECRET = "replace-with-strong-local-secret";
 const PRODUCTION_LIKE_ENVS = ["production", "staging"];
 const PLACEHOLDER_VALUES = new Set([
   "",
+  "placeholder",
   "replace-me",
   "replace-with-strong-local-secret",
+  "replace-with-sms-provider-key",
+  "replace-with-firebase-service-account-json",
+  "replace-with-google-maps-key",
   "minioadmin",
   "minioadmin123",
   "easydoc_dev_password"
@@ -85,15 +89,36 @@ export function validateRuntimeEnvironment(): RuntimeEnvironmentValidation {
     requirePresent("MINIO_BUCKET_KYC", errors);
     requirePresent("MINIO_BUCKET_CHAT", errors);
     requirePresent("MINIO_BUCKET_EXPORTS", errors);
+    requirePresent("SMS_PROVIDER", errors);
+    requirePresent("PUSH_PROVIDER", errors);
+    requirePresent("SMS_PROVIDER_API_KEY", errors);
+    requirePresent("SMS_PROVIDER_SENDER_ID", errors);
+    requirePresent("FIREBASE_PROJECT_ID", errors);
+    requirePresent("GOOGLE_MAPS_API_KEY", errors);
     requireNonPlaceholder("JWT_SECRET", errors);
     requireNonPlaceholder("MINIO_ACCESS_KEY", errors);
     requireNonPlaceholder("MINIO_SECRET_KEY", errors);
+    requireNonPlaceholder("SMS_PROVIDER", errors);
+    requireNonPlaceholder("PUSH_PROVIDER", errors);
+    requireNonPlaceholder("SMS_PROVIDER_API_KEY", errors);
+    requireNonPlaceholder("SMS_PROVIDER_SENDER_ID", errors);
+    requireNonPlaceholder("FIREBASE_PROJECT_ID", errors);
+    requireNonPlaceholder("GOOGLE_MAPS_API_KEY", errors);
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim()) {
+      requireNonPlaceholder("FIREBASE_SERVICE_ACCOUNT_JSON", errors);
+    }
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_SECRET_NAME?.trim()) {
+      requireNonPlaceholder("FIREBASE_SERVICE_ACCOUNT_SECRET_NAME", errors);
+    }
 
     if (process.env.SMS_PROVIDER === "local-mock") {
-      warnings.push("SMS_PROVIDER is local-mock; production OTP delivery still needs a real provider.");
+      errors.push("SMS_PROVIDER must not be local-mock outside local development.");
     }
-    if (process.env.FCM_SERVER_KEY === "replace-me") {
-      warnings.push("FCM_SERVER_KEY is a placeholder; push delivery is not enabled.");
+    if (!process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim() && !process.env.FIREBASE_SERVICE_ACCOUNT_SECRET_NAME?.trim()) {
+      errors.push("Firebase service account secret reference is required outside local development.");
+    }
+    if (process.env.PUSH_PROVIDER !== "firebase") {
+      errors.push("PUSH_PROVIDER must be firebase outside local development.");
     }
   }
 

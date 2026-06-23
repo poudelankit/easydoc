@@ -13,6 +13,7 @@ data:
   MINIO_BUCKET_EXPORTS: "easydocument-exports"
   JWT_ACCESS_TTL: "15m"
   JWT_REFRESH_TTL: "30d"
-  SMS_PROVIDER: "placeholder"
+  SMS_PROVIDER: "real-sms-provider"
+  PUSH_PROVIDER: "firebase"
   VITE_API_BASE_URL: "https://api.easydocument.example/v1"
   VITE_SOCKET_URL: "https://api.easydocument.example"

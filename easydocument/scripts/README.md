@@ -12,4 +12,7 @@ Scripts in this folder should be safe for local development and avoid destructiv
 - `validate-migrations.sh`: applies all SQL migrations to the `DATABASE_URL` target with `ON_ERROR_STOP`.
 - `validate-kubernetes-manifests.sh`: validates sample Kubernetes manifest syntax, using `kubectl` when available.
 - `deployment-smoke-test.sh`: checks deployed health, readiness, dependency health, admin auth blocking, metrics, and optional local/mock OTP flow.
+- `validate-image-tags.sh`: validates commit SHA, semantic version, and staging/production image tag inputs.
+- `create-release-tags.sh`: prints or applies Docker tags for SHA, semantic version, and environment tags.
+- `verify-production-config.sh`: checks required staging/production secret references and rejects local placeholders.
 - `validate-production-readiness.sh`: runs Compose config validation, builds, backend/admin tests, and Flutter validation when the Flutter SDK is installed.

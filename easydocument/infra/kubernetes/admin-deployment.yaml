@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: admin
-          image: ghcr.io/easydocument/admin:phase10
+          image: ghcr.io/easydocument/admin:staging
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

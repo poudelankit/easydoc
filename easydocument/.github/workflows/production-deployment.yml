@@ -8,10 +8,13 @@ on:
         required: true
         type: choice
         options:
-          - staging
           - production
       image_tag:
         description: "Immutable image tag to promote"
+        required: true
+        type: string
+      semantic_version:
+        description: "Semantic version associated with this release, for example v1.2.3"
         required: true
         type: string
       confirm_manual_deployment:
@@ -34,19 +37,49 @@ jobs:
             echo "Manual deployment gate not approved."
             exit 1
           fi
+      - name: Validate image tag format
+        env:
+          COMMIT_SHA: ${{ github.sha }}
+          SEMANTIC_VERSION: ${{ inputs.semantic_version }}
+          DEPLOY_ENVIRONMENT: production
+        run: ./scripts/validate-image-tags.sh
       - name: Validate Kubernetes manifests
         run: |
           python3 -m pip install pyyaml
           ./scripts/validate-kubernetes-manifests.sh
+      - name: Verify production config references
+        env:
+          NODE_ENV: production
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          CORS_ORIGIN: ${{ secrets.CORS_ORIGIN }}
+          MINIO_ENDPOINT: ${{ secrets.MINIO_ENDPOINT }}
+          MINIO_ACCESS_KEY: ${{ secrets.MINIO_ACCESS_KEY }}
+          MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY }}
+          MINIO_BUCKET_KYC: ${{ secrets.MINIO_BUCKET_KYC }}
+          MINIO_BUCKET_CHAT: ${{ secrets.MINIO_BUCKET_CHAT }}
+          MINIO_BUCKET_EXPORTS: ${{ secrets.MINIO_BUCKET_EXPORTS }}
+          SMS_PROVIDER: ${{ secrets.SMS_PROVIDER }}
+          SMS_PROVIDER_API_KEY: ${{ secrets.SMS_PROVIDER_API_KEY }}
+          SMS_PROVIDER_SENDER_ID: ${{ secrets.SMS_PROVIDER_SENDER_ID }}
+          PUSH_PROVIDER: ${{ secrets.PUSH_PROVIDER }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_SERVICE_ACCOUNT_SECRET_NAME: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SECRET_NAME }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: ./scripts/verify-production-config.sh
       - name: Print deployment checklist
         run: |
           echo "Target environment: ${{ inputs.environment }}"
           echo "Image tag: ${{ inputs.image_tag }}"
+          echo "Semantic version: ${{ inputs.semantic_version }}"
           echo "This workflow is a documented/manual deployment gate only."
-          echo "Review docs/release-checklist.md and docs/rollback-procedure.md before applying manifests."
+          echo "Review docs/production-cutover-runbook.md and docs/production-rollback-rehearsal.md before applying manifests."
       - name: Optional endpoint smoke test
         env:
           API_BASE_URL: ${{ secrets.ADMIN_API_URL }}
+          EXPECT_SMS_PROVIDER: ${{ secrets.SMS_PROVIDER }}
+          EXPECT_PUSH_PROVIDER: ${{ secrets.PUSH_PROVIDER }}
         run: |
           if [ -z "$API_BASE_URL" ]; then
             echo "ADMIN_API_URL secret not configured; skipping smoke test."

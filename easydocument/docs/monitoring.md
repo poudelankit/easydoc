@@ -1,6 +1,6 @@
 # Monitoring
 
-Phase 10 uses structured JSON logs and health endpoints as the monitoring foundation.
+Phase 12 uses structured JSON logs, health endpoints, provider checks, and metrics as the monitoring foundation.
 
 ## Logs
 
@@ -34,7 +34,7 @@ Avoid high-cardinality labels such as user IDs and task IDs; keep those in log b
 
 ## Metrics
 
-The backend exposes a Phase 11 metrics foundation at:
+The backend exposes a metrics foundation at:
 
 ```text
 GET /metrics

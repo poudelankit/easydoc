@@ -7,7 +7,6 @@ import {
   UnauthorizedException
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
-import { randomInt } from "crypto";
 import { QueryResultRow } from "pg";
 import { resolveJwtSecret, shouldReturnDevOtp } from "../../common/config/security-env";
 import { hashWithSecret, newTokenId } from "../../common/utils/hash.util";
@@ -19,6 +18,7 @@ import { DatabaseService } from "../database/database.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { RateLimitService } from "../rate-limit/rate-limit.service";
 import { RedisService } from "../redis/redis.service";
+import { SmsService } from "../sms/sms.service";
 import { SendOtpDto } from "./dto/send-otp.dto";
 import { VerifyOtpDto } from "./dto/verify-otp.dto";
 
@@ -48,6 +48,7 @@ export class AuthService {
     private readonly redis: RedisService,
     private readonly jwt: JwtService,
     private readonly audit: AuditService,
+    private readonly sms: SmsService,
     @Optional() private readonly notifications?: NotificationsService,
     @Optional() private readonly rateLimit?: RateLimitService
   ) {}
@@ -62,7 +63,7 @@ export class AuthService {
       "Too many OTP requests. Try again later."
     );
 
-    const otp = process.env.SMS_PROVIDER === "local-mock" ? "123456" : String(randomInt(100000, 999999));
+    const { otp } = await this.sms.sendOtp({ phoneNumber, purpose: dto.purpose });
     const otpHash = hashWithSecret(otp, this.jwtSecret);
 
     await this.database.query(

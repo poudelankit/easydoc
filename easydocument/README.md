@@ -2,7 +2,7 @@
 
 EasyDocument is a Nepal-only document services marketplace connecting customers with verified local agents for document retrieval, submission, verification, and office follow-up work.
 
-This repository is the EasyDocument Enterprise Implementation Package monorepo. It currently contains the Phase 11 foundation for authentication, profiles, agent onboarding, task creation, task acceptance, accepted-task communication, post-acceptance lifecycle tracking, in-app call signaling, admin operations, dispute mediation, reviews, reputation, stored notifications, production readiness hardening, and CI/CD deployment wiring.
+This repository is the EasyDocument Enterprise Implementation Package monorepo. It currently contains the Phase 12 foundation for authentication, profiles, agent onboarding, task creation, task acceptance, accepted-task communication, post-acceptance lifecycle tracking, in-app call signaling, admin operations, dispute mediation, reviews, reputation, stored notifications, production readiness hardening, CI/CD deployment wiring, and production cutover preparation.
 
 ## Monorepo Layout
 
@@ -71,7 +71,7 @@ Stop local infrastructure:
 
 ## Current Phase
 
-Phase 11 adds CI/CD wiring and deployment operations on top of the Phase 1-10 foundation: GitHub Actions validation, manual deployment gate, migration and Kubernetes validation scripts, smoke tests, secret-manager placeholders, metrics export, observability documentation, release/rollback runbooks, incident response, staging deployment, and environment promotion guidance.
+Phase 12 adds production integration and cutover readiness on top of the Phase 1-11 foundation: registry promotion, image tagging strategy, manual staging and production deployment gates, provider secret references, SMS and Firebase push provider abstractions, stronger smoke tests, release drill docs, rollback rehearsal, migration rollback policy, launch checklist, and cutover runbook.
 
 ## Local Run Commands
 

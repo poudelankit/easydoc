@@ -16,7 +16,18 @@ The script checks:
 - `GET /health/redis`
 - `GET /health/minio`
 - `GET /metrics`
+- `GET /health/otp-provider`
+- `GET /health/push-provider`
 - `GET /v1/admin/dashboard` returns `401` without a token
+
+Provider mode checks can be enforced:
+
+```bash
+API_BASE_URL=https://staging-api.easydocument.example \
+EXPECT_SMS_PROVIDER=real-sms-provider \
+EXPECT_PUSH_PROVIDER=firebase \
+./scripts/deployment-smoke-test.sh
+```
 
 ## Non-Production OTP Check
 
@@ -33,4 +44,3 @@ Do not run the mock OTP flow against production.
 ## Expected Outcome
 
 The script exits non-zero on the first failed check and prints the failing response body.
-

@@ -15,11 +15,11 @@ Node.js + NestJS backend API for EasyDocument.
 - Admin operational management.
 - Dispute and admin mediation workflow.
 - Reviews, ratings, and query-calculated agent reputation.
-- Stored in-app notifications with SMS and push placeholder channels.
+- Stored in-app notifications with SMS and Firebase push provider abstractions.
 
 ## Current State
 
-This folder contains the Phase 11 NestJS API foundation for auth, profiles, task creation, nearby task discovery, task acceptance, accepted-task communication, task lifecycle tracking, in-app call signaling metadata, admin operational management, dispute mediation, reviews, ratings, agent reputation, stored in-app notifications, production readiness hardening, and CI/CD observability hooks.
+This folder contains the Phase 12 NestJS API foundation for auth, profiles, task creation, nearby task discovery, task acceptance, accepted-task communication, task lifecycle tracking, in-app call signaling metadata, admin operational management, dispute mediation, reviews, ratings, agent reputation, stored in-app notifications, production readiness hardening, CI/CD observability hooks, SMS provider abstraction, Firebase push abstraction, and cutover readiness checks.
 
 ## Implemented Endpoints
 
@@ -28,6 +28,8 @@ This folder contains the Phase 11 NestJS API foundation for auth, profiles, task
 - `GET /health/database`
 - `GET /health/redis`
 - `GET /health/minio`
+- `GET /health/otp-provider`
+- `GET /health/push-provider`
 - `GET /metrics`
 - `POST /v1/auth/otp/send`
 - `POST /v1/auth/otp/verify`
@@ -107,6 +109,13 @@ This folder contains the Phase 11 NestJS API foundation for auth, profiles, task
 - CI/CD validation scripts live under `scripts/` and GitHub Actions workflows live under `.github/workflows/`.
 - Production deployment remains a documented/manual workflow gate; automatic cluster deployment is not enabled.
 
+## Phase 12 Notes
+
+- OTP delivery now goes through `SmsService`; local development keeps the `local-mock` provider and production-like environments require a non-local provider configuration.
+- Firebase push is represented by `PushService` with a service account secret reference; no service account JSON is committed.
+- `GET /health/otp-provider` and `GET /health/push-provider` expose deployment smoke-test provider mode checks.
+- Registry promotion and staging/production gates remain manual and do not apply cluster manifests automatically.
+
 ## Socket.IO Events
 
 - `task:join`
@@ -140,5 +149,5 @@ npm run test --workspace @easydocument/api
 Build the production image from the repository root:
 
 ```bash
-docker build -f services/api/Dockerfile -t easydocument/api:phase11 .
+docker build -f services/api/Dockerfile -t easydocument/api:phase12 .
 ```

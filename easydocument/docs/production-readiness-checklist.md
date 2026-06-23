@@ -8,11 +8,14 @@
 - Docker Compose local app profile starts when needed.
 - Kubernetes config maps and secrets are environment-specific.
 - Required GitHub Actions environment secrets are present.
+- SMS provider, Firebase push provider, and Google Maps credentials exist in the secret manager.
+- Registry image tags are available as `sha-<commit>`, `v<semver>`, `staging`, and `production`.
 
 ## Reliability
 
 - `/health/live` and `/health/ready` are configured as probes.
 - Database, Redis, and MinIO health checks are monitored.
+- OTP and push provider health checks are monitored.
 - PostgreSQL backups and restore drills are scheduled.
 - MinIO/S3 bucket backup and lifecycle policy are configured.
 - Deployment smoke tests pass in staging before production promotion.
@@ -25,6 +28,8 @@
 - Rate limiting is enabled.
 - Admin routes are protected by RBAC and operational access controls.
 - Manual production deployment gate requires approval.
+- Firebase service account JSON is never committed.
+- `SMS_PROVIDER` is not `local-mock` outside local development.
 
 ## Validation
 
@@ -35,3 +40,5 @@
 Release should not proceed until backend, shared types, admin, and mobile validation pass.
 
 Also confirm branch/PR validation, Kubernetes manifest validation, and the smoke test script have passed for the target environment.
+
+Before launch, also complete `docs/production-launch-checklist.md`, `docs/release-drill.md`, and `docs/production-cutover-runbook.md`.

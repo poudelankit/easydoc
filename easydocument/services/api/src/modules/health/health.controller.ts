@@ -1,6 +1,8 @@
 import { Controller, Get, ServiceUnavailableException } from "@nestjs/common";
 import { DatabaseService } from "../database/database.service";
+import { PushService } from "../push/push.service";
 import { RedisService } from "../redis/redis.service";
+import { SmsService } from "../sms/sms.service";
 import { StorageService } from "../storage/storage.service";
 
 type ComponentName = "database" | "redis" | "minio";
@@ -16,7 +18,9 @@ export class HealthController {
   constructor(
     private readonly database: DatabaseService,
     private readonly redis: RedisService,
-    private readonly storage: StorageService
+    private readonly storage: StorageService,
+    private readonly sms: SmsService,
+    private readonly push: PushService
   ) {}
 
   @Get("live")
@@ -64,6 +68,37 @@ export class HealthController {
   @Get("minio")
   async minioHealth() {
     return this.singleComponent("minio", () => this.storage.healthCheck());
+  }
+
+  @Get("otp-provider")
+  otpProviderHealth() {
+    const provider = this.sms.getProviderStatus();
+    return this.providerHealth("otp_provider", provider);
+  }
+
+  @Get("push-provider")
+  pushProviderHealth() {
+    const provider = this.push.getProviderStatus();
+    return this.providerHealth("push_provider", provider);
+  }
+
+  private providerHealth(name: string, provider: { configured: boolean }) {
+    const payload = {
+      status: provider.configured ? "ready" : "not_ready",
+      service: "easydocument-api",
+      timestamp: new Date().toISOString(),
+      checks: {
+        [name]: {
+          status: provider.configured ? "ok" : "error",
+          ...provider
+        }
+      }
+    };
+
+    if (!provider.configured) {
+      throw new ServiceUnavailableException(payload);
+    }
+    return payload;
   }
 
   private async singleComponent(name: ComponentName, check: () => Promise<boolean>) {

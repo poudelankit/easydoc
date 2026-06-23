@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: ghcr.io/easydocument/api:phase10
+          image: ghcr.io/easydocument/api:staging
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000

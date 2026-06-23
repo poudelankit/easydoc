@@ -25,3 +25,5 @@ kubectl apply -f ingress.yaml
 `secrets.example.yaml` is not a real secret manifest for production. Create the secret through your cluster secret manager or encrypted manifest flow.
 
 If the External Secrets Operator is installed, adapt `external-secrets.example.yaml` to your provider and apply it instead of storing literal Kubernetes Secret values in Git.
+
+Phase 12 expects image tags to follow `sha-<commit>`, `v<semver>`, `staging`, and `production`. The sample deployment manifests use the `staging` tag and should be patched to the immutable SHA or semantic version tag during a real release.

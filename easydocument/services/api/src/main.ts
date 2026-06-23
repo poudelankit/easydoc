@@ -21,6 +21,8 @@ async function bootstrap() {
       { path: "health/database", method: RequestMethod.GET },
       { path: "health/redis", method: RequestMethod.GET },
       { path: "health/minio", method: RequestMethod.GET },
+      { path: "health/otp-provider", method: RequestMethod.GET },
+      { path: "health/push-provider", method: RequestMethod.GET },
       { path: "metrics", method: RequestMethod.GET }
     ]
   });

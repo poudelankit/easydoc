@@ -20,6 +20,9 @@
     "test": "npm run test --workspaces --if-present",
     "validate:kubernetes": "./scripts/validate-kubernetes-manifests.sh",
     "validate:migrations": "./scripts/validate-migrations.sh",
+    "validate:image-tags": "./scripts/validate-image-tags.sh",
+    "validate:production-config": "./scripts/verify-production-config.sh",
+    "release:tags": "./scripts/create-release-tags.sh",
     "smoke:deployment": "./scripts/deployment-smoke-test.sh",
     "validate:production": "./scripts/validate-production-readiness.sh"
   },

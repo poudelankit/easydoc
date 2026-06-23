@@ -1,6 +1,6 @@
 # Deployment
 
-Phase 10 adds production readiness assets without changing product workflows.
+Phase 12 adds production integration and cutover readiness assets without changing marketplace product workflows.
 
 ## Required Runtime Inputs
 
@@ -23,12 +23,12 @@ The backend exits during startup if required production values are missing or lo
 ## Build Images
 
 ```bash
-docker build -f services/api/Dockerfile -t easydocument/api:phase10 .
+docker build -f services/api/Dockerfile -t easydocument/api:phase12 .
 docker build \
   -f apps/admin/Dockerfile \
   --build-arg VITE_API_BASE_URL=https://api.easydocument.example/v1 \
   --build-arg VITE_SOCKET_URL=https://api.easydocument.example \
-  -t easydocument/admin:phase10 .
+  -t easydocument/admin:phase12 .
 ```
 
 ## Local App Profile
@@ -62,6 +62,8 @@ Validate manifests locally:
 - `GET /health/database`
 - `GET /health/redis`
 - `GET /health/minio`
+- `GET /health/otp-provider`
+- `GET /health/push-provider`
 - `GET /metrics`: Prometheus-compatible metrics foundation.
 
 ## Smoke Tests
@@ -76,4 +78,4 @@ API_BASE_URL=https://api.easydocument.example ./scripts/deployment-smoke-test.sh
 ./scripts/validate-production-readiness.sh
 ```
 
-CI/CD details live in `docs/ci-cd.md`. Manual release and rollback guidance lives in `docs/release-checklist.md` and `docs/rollback-procedure.md`.
+CI/CD details live in `docs/ci-cd.md`. Registry promotion lives in `docs/registry-promotion.md`. Manual cutover and rollback guidance lives in `docs/production-cutover-runbook.md` and `docs/production-rollback-rehearsal.md`.

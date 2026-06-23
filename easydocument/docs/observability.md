@@ -1,6 +1,6 @@
 # Observability
 
-Phase 11 adds a lightweight metrics export point and documents the Prometheus, Grafana, and Loki expectations. Structured JSON logs were introduced in Phase 10.
+Phase 11 added a lightweight metrics export point; Phase 12 adds provider health smoke checks. Structured JSON logs were introduced in Phase 10.
 
 ## Metrics Endpoint
 
@@ -64,4 +64,3 @@ Keep user IDs, task IDs, dispute IDs, and request IDs in the log body rather tha
 - MinIO unavailable or bucket near capacity.
 - Sustained OTP rate-limit spikes.
 - Repeated failed admin authorization attempts.
-

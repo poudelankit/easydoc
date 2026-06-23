@@ -97,6 +97,24 @@ export interface AdminNotificationSummaryResponse {
   }>;
 }
 
+export type SmsProviderMode = "local-mock" | "provider-placeholder";
+export type PushProviderMode = "placeholder" | "firebase-placeholder";
+
+export interface ProviderHealthResponse {
+  status: "ready" | "not_ready";
+  service: "easydocument-api";
+  timestamp: string;
+  checks: Record<
+    string,
+    {
+      status: "ok" | "error";
+      configured: boolean;
+      mode: SmsProviderMode | PushProviderMode;
+      providerName?: string;
+    }
+  >;
+}
+
 export interface CallStatusHistoryEntry {
   id: string;
   actorUserId: string;

@@ -1,10 +1,12 @@
 # CI/CD
 
-Phase 11 wires validation and manual deployment gates without enabling automatic production deploys.
+Phase 12 wires validation, registry promotion, and manual deployment gates without enabling automatic production deploys.
 
 ## Workflows
 
 - `.github/workflows/branch-pr-validation.yml`: runs on pull requests and pushes to `main` or `develop`.
+- `.github/workflows/container-registry-promotion.yml`: manual build and registry promotion for SHA, semantic, staging, and production image tags.
+- `.github/workflows/staging-deployment.yml`: manual staging deployment gate and optional smoke tests.
 - `.github/workflows/production-deployment.yml`: manual `workflow_dispatch` gate for staging or production.
 
 ## Branch And PR Validation
@@ -31,6 +33,17 @@ The workflow validates Kubernetes manifests and can run smoke tests when `ADMIN_
 
 It does not apply manifests to a cluster yet. Real deployment should be wired after the staging cluster, image registry, secret manager, and approval policy are finalized.
 
+## Registry Promotion
+
+Image tags follow:
+
+- `sha-<commit>`
+- `v<semver>`
+- `staging`
+- `production`
+
+See `docs/registry-promotion.md`.
+
 ## Local Equivalents
 
 ```bash
@@ -43,4 +56,3 @@ cd apps/mobile && flutter analyze && flutter test
 ./scripts/validate-kubernetes-manifests.sh
 DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DB ./scripts/validate-migrations.sh
 ```
-
