@@ -18,6 +18,9 @@
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
+    "validate:kubernetes": "./scripts/validate-kubernetes-manifests.sh",
+    "validate:migrations": "./scripts/validate-migrations.sh",
+    "smoke:deployment": "./scripts/deployment-smoke-test.sh",
     "validate:production": "./scripts/validate-production-readiness.sh"
   },
   "engines": {

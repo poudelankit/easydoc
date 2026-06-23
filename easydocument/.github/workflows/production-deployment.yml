@@ -1,0 +1,55 @@
+name: Manual Production Deployment Gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deployment target environment"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      image_tag:
+        description: "Immutable image tag to promote"
+        required: true
+        type: string
+      confirm_manual_deployment:
+        description: "Type APPROVED to run the manual deployment gate"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deployment-gate:
+    name: Manual Deployment Checklist Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm manual gate
+        run: |
+          if [ "${{ inputs.confirm_manual_deployment }}" != "APPROVED" ]; then
+            echo "Manual deployment gate not approved."
+            exit 1
+          fi
+      - name: Validate Kubernetes manifests
+        run: |
+          python3 -m pip install pyyaml
+          ./scripts/validate-kubernetes-manifests.sh
+      - name: Print deployment checklist
+        run: |
+          echo "Target environment: ${{ inputs.environment }}"
+          echo "Image tag: ${{ inputs.image_tag }}"
+          echo "This workflow is a documented/manual deployment gate only."
+          echo "Review docs/release-checklist.md and docs/rollback-procedure.md before applying manifests."
+      - name: Optional endpoint smoke test
+        env:
+          API_BASE_URL: ${{ secrets.ADMIN_API_URL }}
+        run: |
+          if [ -z "$API_BASE_URL" ]; then
+            echo "ADMIN_API_URL secret not configured; skipping smoke test."
+            exit 0
+          fi
+          ./scripts/deployment-smoke-test.sh

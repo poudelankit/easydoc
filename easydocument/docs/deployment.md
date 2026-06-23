@@ -49,6 +49,12 @@ Stateful dependencies should be managed separately:
 - Redis 7+ for rate limiting and ephemeral controls.
 - MinIO/S3-compatible object storage with lifecycle policy and access logging.
 
+Validate manifests locally:
+
+```bash
+./scripts/validate-kubernetes-manifests.sh
+```
+
 ## Health Probes
 
 - `GET /health/live`: process liveness.
@@ -56,9 +62,18 @@ Stateful dependencies should be managed separately:
 - `GET /health/database`
 - `GET /health/redis`
 - `GET /health/minio`
+- `GET /metrics`: Prometheus-compatible metrics foundation.
+
+## Smoke Tests
+
+```bash
+API_BASE_URL=https://api.easydocument.example ./scripts/deployment-smoke-test.sh
+```
 
 ## CI Validation
 
 ```bash
 ./scripts/validate-production-readiness.sh
 ```
+
+CI/CD details live in `docs/ci-cd.md`. Manual release and rollback guidance lives in `docs/release-checklist.md` and `docs/rollback-procedure.md`.

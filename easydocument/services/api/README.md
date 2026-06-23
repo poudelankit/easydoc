@@ -19,7 +19,7 @@ Node.js + NestJS backend API for EasyDocument.
 
 ## Current State
 
-This folder contains the Phase 10 NestJS API foundation for auth, profiles, task creation, nearby task discovery, task acceptance, accepted-task communication, task lifecycle tracking, in-app call signaling metadata, admin operational management, dispute mediation, reviews, ratings, agent reputation, stored in-app notifications, and production readiness hardening.
+This folder contains the Phase 11 NestJS API foundation for auth, profiles, task creation, nearby task discovery, task acceptance, accepted-task communication, task lifecycle tracking, in-app call signaling metadata, admin operational management, dispute mediation, reviews, ratings, agent reputation, stored in-app notifications, production readiness hardening, and CI/CD observability hooks.
 
 ## Implemented Endpoints
 
@@ -28,6 +28,7 @@ This folder contains the Phase 10 NestJS API foundation for auth, profiles, task
 - `GET /health/database`
 - `GET /health/redis`
 - `GET /health/minio`
+- `GET /metrics`
 - `POST /v1/auth/otp/send`
 - `POST /v1/auth/otp/verify`
 - `POST /v1/auth/refresh`
@@ -100,6 +101,12 @@ This folder contains the Phase 10 NestJS API foundation for auth, profiles, task
 - Backend logs are structured JSON lines for request lifecycle, errors, audits, notifications, and rate-limit checks.
 - Redis-backed rate limiting is applied to OTP send, OTP verify, message send, call request, and dispute creation.
 
+## Phase 11 Notes
+
+- `GET /metrics` returns a Prometheus text-format foundation endpoint outside the `/v1` API prefix.
+- CI/CD validation scripts live under `scripts/` and GitHub Actions workflows live under `.github/workflows/`.
+- Production deployment remains a documented/manual workflow gate; automatic cluster deployment is not enabled.
+
 ## Socket.IO Events
 
 - `task:join`
@@ -133,5 +140,5 @@ npm run test --workspace @easydocument/api
 Build the production image from the repository root:
 
 ```bash
-docker build -f services/api/Dockerfile -t easydocument/api:phase10 .
+docker build -f services/api/Dockerfile -t easydocument/api:phase11 .
 ```

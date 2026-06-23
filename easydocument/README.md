@@ -2,7 +2,7 @@
 
 EasyDocument is a Nepal-only document services marketplace connecting customers with verified local agents for document retrieval, submission, verification, and office follow-up work.
 
-This repository is the EasyDocument Enterprise Implementation Package monorepo. It currently contains the Phase 10 foundation for authentication, profiles, agent onboarding, task creation, nearby task discovery, task acceptance, accepted-task communication, post-acceptance task lifecycle tracking, in-app call signaling, admin operational management, dispute mediation, reviews, ratings, agent reputation, stored in-app notifications, and production readiness hardening.
+This repository is the EasyDocument Enterprise Implementation Package monorepo. It currently contains the Phase 11 foundation for authentication, profiles, agent onboarding, task creation, task acceptance, accepted-task communication, post-acceptance lifecycle tracking, in-app call signaling, admin operations, dispute mediation, reviews, reputation, stored notifications, production readiness hardening, and CI/CD deployment wiring.
 
 ## Monorepo Layout
 
@@ -71,7 +71,7 @@ Stop local infrastructure:
 
 ## Current Phase
 
-Phase 10 adds production readiness work on top of the Phase 1-9 product foundation: stricter environment validation, structured backend logs, audit/rate-limit hardening, richer health checks, production Dockerfiles, Kubernetes samples, deployment runbooks, backup/restore notes, monitoring guidance, and security/readiness checklists.
+Phase 11 adds CI/CD wiring and deployment operations on top of the Phase 1-10 foundation: GitHub Actions validation, manual deployment gate, migration and Kubernetes validation scripts, smoke tests, secret-manager placeholders, metrics export, observability documentation, release/rollback runbooks, incident response, staging deployment, and environment promotion guidance.
 
 ## Local Run Commands
 
@@ -114,6 +114,18 @@ Run production readiness validation:
 npm run validate:production
 ```
 
+Validate Kubernetes manifests:
+
+```bash
+npm run validate:kubernetes
+```
+
+Run deployment smoke tests against a running API:
+
+```bash
+API_BASE_URL=http://localhost:3000 npm run smoke:deployment
+```
+
 Run the mobile app from `apps/mobile` on a machine with Flutter installed:
 
 ```bash
@@ -121,4 +133,4 @@ flutter pub get
 flutter run
 ```
 
-Production deployment notes live in `docs/deployment.md`.
+Production deployment notes live in `docs/deployment.md`, with CI/CD details in `docs/ci-cd.md`.

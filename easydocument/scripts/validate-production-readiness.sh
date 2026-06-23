@@ -6,6 +6,10 @@ cd "$ROOT_DIR"
 
 echo "== Docker Compose config =="
 docker compose -f infra/docker/docker-compose.yml config >/dev/null
+docker compose -f infra/docker/docker-compose.yml --profile app config >/dev/null
+
+echo "== Kubernetes manifests =="
+./scripts/validate-kubernetes-manifests.sh
 
 echo "== Shared, API, and admin builds =="
 npm run build --workspaces --if-present

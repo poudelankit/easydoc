@@ -20,7 +20,8 @@ async function bootstrap() {
       { path: "health/ready", method: RequestMethod.GET },
       { path: "health/database", method: RequestMethod.GET },
       { path: "health/redis", method: RequestMethod.GET },
-      { path: "health/minio", method: RequestMethod.GET }
+      { path: "health/minio", method: RequestMethod.GET },
+      { path: "metrics", method: RequestMethod.GET }
     ]
   });
 

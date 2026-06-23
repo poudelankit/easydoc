@@ -34,6 +34,12 @@ Avoid high-cardinality labels such as user IDs and task IDs; keep those in log b
 
 ## Metrics
 
+The backend exposes a Phase 11 metrics foundation at:
+
+```text
+GET /metrics
+```
+
 Prometheus/Grafana setup should track:
 
 - API pod restarts and readiness failures.
@@ -43,6 +49,8 @@ Prometheus/Grafana setup should track:
 - Redis command latency and memory.
 - MinIO bucket usage, request errors, and latency.
 - Rate-limit rejection counts from `rate_limit.checked`.
+
+Detailed scrape config, dashboard expectations, and Loki guidance live in `docs/observability.md`.
 
 ## Alerts
 

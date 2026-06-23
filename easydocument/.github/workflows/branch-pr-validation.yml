@@ -1,0 +1,125 @@
+name: Branch And PR Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+  push:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  shared-types:
+    name: Shared Types Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run build --workspace @easydocument/shared-types
+
+  backend:
+    name: Backend Build And Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run build --workspace @easydocument/api
+      - run: npm run test --workspace @easydocument/api -- --runInBand
+
+  admin:
+    name: Admin Build And Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm run build --workspace @easydocument/shared-types
+      - run: npm run build --workspace @easydocument/admin
+      - run: npm run test --workspace @easydocument/admin
+
+  flutter:
+    name: Flutter Analyze And Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - working-directory: apps/mobile
+        run: flutter pub get
+      - working-directory: apps/mobile
+        run: flutter analyze
+      - working-directory: apps/mobile
+        run: flutter test
+
+  docker-images:
+    name: Docker Image Build Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build API image
+        run: docker build -f services/api/Dockerfile -t easydocument-api:ci .
+      - name: Build admin image
+        run: |
+          docker build \
+            -f apps/admin/Dockerfile \
+            --build-arg VITE_API_BASE_URL=https://api.easydocument.example/v1 \
+            --build-arg VITE_SOCKET_URL=https://api.easydocument.example \
+            -t easydocument-admin:ci .
+
+  migrations:
+    name: Migration Syntax Validation
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:15-3.4
+        env:
+          POSTGRES_DB: easydocument_ci
+          POSTGRES_USER: easydoc
+          POSTGRES_PASSWORD: easydoc_ci_password
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U easydoc -d easydocument_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      - name: Apply migrations
+        env:
+          DATABASE_URL: postgresql://easydoc:easydoc_ci_password@localhost:55432/easydocument_ci
+        run: ./scripts/validate-migrations.sh
+
+  kubernetes:
+    name: Kubernetes Manifest Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m pip install pyyaml
+      - run: ./scripts/validate-kubernetes-manifests.sh
