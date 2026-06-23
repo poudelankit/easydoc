@@ -16,3 +16,4 @@ Scripts in this folder should be safe for local development and avoid destructiv
 - `create-release-tags.sh`: prints or applies Docker tags for SHA, semantic version, and environment tags.
 - `verify-production-config.sh`: checks required staging/production secret references and rejects local placeholders.
 - `validate-production-readiness.sh`: runs Compose config validation, builds, backend/admin tests, and Flutter validation when the Flutter SDK is installed.
+- `seed-local-demo-data.sh`: safely seeds local-only demo customer, agent, task, communication, dispute, review, and notification data. Refuses staging/production and non-local database URLs.
