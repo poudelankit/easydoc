@@ -301,3 +301,49 @@ export interface AdminDisputeDetail extends AdminDisputeSummary {
   taskTimeline: AdminTaskTimelineResponse["events"];
   communicationAudit: AdminCommunicationAuditResponse;
 }
+
+export interface ReviewRatings {
+  overall: number;
+  communication: number;
+  timeliness: number;
+  professionalism: number;
+}
+
+export interface TaskReview {
+  id: string;
+  taskId: string;
+  taskName: string;
+  taskStatus: TaskStatus;
+  customer: {
+    userId: string;
+    fullName: string;
+    phoneNumber?: string;
+  };
+  agent: {
+    userId: string;
+    profileId: string | null;
+    fullName: string;
+    phoneNumber?: string;
+  };
+  ratings: ReviewRatings;
+  reviewText: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface AgentReputationSummary {
+  agent: {
+    profileId: string;
+    userId: string;
+    fullName: string;
+  };
+  averageOverallRating: number;
+  averageCommunicationRating: number;
+  averageTimelinessRating: number;
+  averageProfessionalismRating: number;
+  totalCompletedTasks: number;
+  totalReviews: number;
+  recentReviews: TaskReview[];
+}
+
+export type AdminReviewSummary = TaskReview;

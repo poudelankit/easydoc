@@ -4,7 +4,8 @@ export const adminNavigationItems = [
   { label: "Dashboard", path: "/" },
   { label: "Agent Verification", path: "/agents" },
   { label: "Task Monitoring", path: "/tasks" },
-  { label: "Disputes", path: "/disputes" }
+  { label: "Disputes", path: "/disputes" },
+  { label: "Reviews", path: "/reviews" }
 ] as const;
 
 export const taskStatusOptions = [

@@ -6,6 +6,7 @@ import type {
   AdminDashboardResponse,
   AdminDisputeDetail,
   AdminDisputeSummary,
+  AdminReviewSummary,
   AdminTaskDetail,
   AdminTaskSummary,
   AdminTaskTimelineResponse,
@@ -132,6 +133,10 @@ export function getDisputes(token: string, status?: DisputeStatus | "") {
 
 export function getDispute(token: string, disputeId: string) {
   return apiRequest<AdminDisputeDetail>(`/admin/disputes/${disputeId}`, { token });
+}
+
+export function getAdminReviews(token: string) {
+  return apiRequest<AdminReviewSummary[]>("/admin/reviews", { token });
 }
 
 export function addMediationNote(token: string, disputeId: string, note: string) {

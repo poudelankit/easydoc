@@ -240,6 +240,8 @@ class CustomerTaskShellScreen extends StatelessWidget {
         SizedBox(height: 24),
         CustomerTaskTimelineScreen(),
         SizedBox(height: 24),
+        LeaveReviewScreen(),
+        SizedBox(height: 24),
         TaskDisputeScreen(),
         SizedBox(height: 24),
         TaskCallControlsScreen(),
@@ -384,6 +386,8 @@ class AgentTaskShellScreen extends StatelessWidget {
         SizedBox(height: 24),
         AgentProgressUpdateScreen(),
         SizedBox(height: 24),
+        AgentReviewsScreen(),
+        SizedBox(height: 24),
         TaskDisputeScreen(),
         SizedBox(height: 24),
         TaskCallControlsScreen(),
@@ -503,6 +507,136 @@ class CompleteTaskButtonPlaceholder extends StatelessWidget {
       onPressed: null,
       icon: const Icon(Icons.task_alt),
       label: const Text('Complete Task'),
+    );
+  }
+}
+
+class LeaveReviewScreen extends StatelessWidget {
+  const LeaveReviewScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _TaskPanel(
+      title: 'Leave Review',
+      children: [
+        _ReadonlyLine(label: 'Availability', value: 'Enabled after task completion'),
+        RatingSelector(label: 'Overall'),
+        SizedBox(height: 10),
+        RatingSelector(label: 'Communication'),
+        SizedBox(height: 10),
+        RatingSelector(label: 'Timeliness'),
+        SizedBox(height: 10),
+        RatingSelector(label: 'Professionalism'),
+        SizedBox(height: 12),
+        ReviewTextField(),
+        SizedBox(height: 16),
+        _ButtonRow(
+          primaryLabel: 'Submit Review',
+          secondaryLabel: 'View My Reviews',
+        ),
+      ],
+    );
+  }
+}
+
+class RatingSelector extends StatelessWidget {
+  const RatingSelector({
+    required this.label,
+    super.key,
+  });
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 128,
+          child: Text(label, style: Theme.of(context).textTheme.labelLarge),
+        ),
+        const Expanded(
+          child: Wrap(
+            spacing: 4,
+            children: [
+              Icon(Icons.star, size: 22),
+              Icon(Icons.star, size: 22),
+              Icon(Icons.star, size: 22),
+              Icon(Icons.star_half, size: 22),
+              Icon(Icons.star_border, size: 22),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class ReviewTextField extends StatelessWidget {
+  const ReviewTextField({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const TextField(
+      minLines: 3,
+      maxLines: 5,
+      decoration: InputDecoration(
+        labelText: 'Review text',
+        border: OutlineInputBorder(),
+      ),
+    );
+  }
+}
+
+class AgentReviewsScreen extends StatelessWidget {
+  const AgentReviewsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _TaskPanel(
+      title: 'Agent Reviews',
+      children: [
+        _ReadonlyLine(label: 'Average rating', value: '4.7 overall'),
+        _ReadonlyLine(label: 'Completed tasks', value: 'Shown from reputation summary'),
+        _ReadonlyLine(label: 'Total reviews', value: 'Shown from reputation summary'),
+        SizedBox(height: 8),
+        _ReviewSummaryLine(
+          rating: '5',
+          text: 'Clear communication and careful document handling.',
+        ),
+        _ReviewSummaryLine(
+          rating: '4',
+          text: 'Delivered on time with helpful updates.',
+        ),
+      ],
+    );
+  }
+}
+
+class _ReviewSummaryLine extends StatelessWidget {
+  const _ReviewSummaryLine({
+    required this.rating,
+    required this.text,
+  });
+
+  final String rating;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Chip(
+            avatar: const Icon(Icons.star, size: 18),
+            label: Text(rating),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Text(text)),
+        ],
+      ),
     );
   }
 }

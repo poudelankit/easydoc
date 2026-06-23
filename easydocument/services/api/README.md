@@ -14,10 +14,11 @@ Node.js + NestJS backend API for EasyDocument.
 - Socket.IO realtime foundation.
 - Admin operational management.
 - Dispute and admin mediation workflow.
+- Reviews, ratings, and query-calculated agent reputation.
 
 ## Current State
 
-This folder contains the Phase 7 NestJS API foundation for auth, profiles, task creation, nearby task discovery, task acceptance, accepted-task communication, task lifecycle tracking, in-app call signaling metadata, admin operational management, and dispute mediation.
+This folder contains the Phase 8 NestJS API foundation for auth, profiles, task creation, nearby task discovery, task acceptance, accepted-task communication, task lifecycle tracking, in-app call signaling metadata, admin operational management, dispute mediation, reviews, ratings, and agent reputation.
 
 ## Implemented Endpoints
 
@@ -56,7 +57,12 @@ This folder contains the Phase 7 NestJS API foundation for auth, profiles, task 
 - `POST /v1/tasks/:taskId/calls/:callId/end`
 - `POST /v1/tasks/:taskId/disputes`
 - `GET /v1/tasks/:taskId/disputes`
+- `POST /v1/tasks/:taskId/reviews`
 - `GET /v1/disputes/:disputeId`
+- `GET /v1/customers/me/reviews`
+- `GET /v1/agents/me/reviews`
+- `GET /v1/agents/:agentId/reviews`
+- `GET /v1/agents/:agentId/reputation`
 - `GET /v1/admin/me`
 - `GET /v1/admin/dashboard`
 - `GET /v1/admin/agents/pending`
@@ -72,6 +78,13 @@ This folder contains the Phase 7 NestJS API foundation for auth, profiles, task 
 - `POST /v1/admin/disputes/:disputeId/notes`
 - `POST /v1/admin/disputes/:disputeId/status`
 - `POST /v1/admin/disputes/:disputeId/resolve`
+- `GET /v1/admin/reviews`
+
+## Phase 8 Notes
+
+- Customers can submit one review per completed task.
+- Review edit windows are not implemented in Phase 8 and remain a future enhancement.
+- Reputation metrics are query-calculated from completed tasks and `task_reviews`.
 
 ## Socket.IO Events
 

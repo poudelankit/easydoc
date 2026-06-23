@@ -14,6 +14,7 @@ Phase 4 adds `migrations/004_phase4_task_lifecycle.sql` for expanded lifecycle s
 Phase 5 adds `migrations/005_phase5_call_foundation.sql` for call sessions and call status history.
 Phase 6 adds `migrations/006_phase6_admin_operations.sql` for agent verification decision metadata.
 Phase 7 adds `migrations/007_phase7_disputes.sql` for disputes and admin mediation notes.
+Phase 8 adds `migrations/008_phase8_reviews_reputation.sql` for completed-task reviews and rating indexes.
 
 The migration covers the auth/profile/KYC foundation only:
 
@@ -60,3 +61,7 @@ Phase 7 adds:
 - `task_disputes`
 - `dispute_status_history`
 - `dispute_mediation_notes`
+
+Phase 8 adds:
+
+- `task_reviews`

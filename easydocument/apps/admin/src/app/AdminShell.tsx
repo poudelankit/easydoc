@@ -29,6 +29,7 @@ import type {
   AdminDashboardResponse,
   AdminDisputeDetail,
   AdminDisputeSummary,
+  AdminReviewSummary,
   AdminTaskDetail,
   AdminTaskSummary,
   AdminTaskTimelineResponse,
@@ -51,6 +52,7 @@ import {
   addMediationNote,
   approveAgent,
   clearStoredSession,
+  getAdminReviews,
   getAgent,
   getCommunicationAudit,
   getDashboard,
@@ -118,6 +120,7 @@ export function AdminShell() {
               <Route path="/tasks/:taskId" element={<TaskDetail token={session.accessToken} />} />
               <Route path="/disputes" element={<DisputeList token={session.accessToken} />} />
               <Route path="/disputes/:disputeId" element={<DisputeDetail token={session.accessToken} />} />
+              <Route path="/reviews" element={<ReviewMonitoring token={session.accessToken} />} />
             </Routes>
           </Box>
         </Container>
@@ -622,6 +625,70 @@ function DisputeDetail({ token }: { token: string }) {
       <TimelinePanel timeline={{ taskId: data.task.id, currentStatus: data.task.status, expectedCompletionDate: null, events: data.taskTimeline }} error={null} />
       <CommunicationAuditPanel audit={data.communicationAudit} error={null} />
     </Stack>
+  );
+}
+
+function ReviewMonitoring({ token }: { token: string }) {
+  const { data, error, loading, reload } = useResource(() => getAdminReviews(token), [token]);
+
+  if (loading) {
+    return <LoadingPanel title="Reviews" />;
+  }
+  if (error || !data) {
+    return <ErrorPanel title="Reviews" error={error} />;
+  }
+
+  return (
+    <Stack spacing={2}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between">
+        <Typography variant="h5" component="h2">
+          Reviews
+        </Typography>
+        <Button onClick={reload}>Refresh</Button>
+      </Stack>
+      <ReviewTable reviews={data} />
+    </Stack>
+  );
+}
+
+function ReviewTable({ reviews }: { reviews: AdminReviewSummary[] }) {
+  return (
+    <Paper variant="outlined">
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell>Task</TableCell>
+            <TableCell>Customer</TableCell>
+            <TableCell>Agent</TableCell>
+            <TableCell>Ratings</TableCell>
+            <TableCell>Review</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {reviews.map((review) => (
+            <TableRow key={review.id}>
+              <TableCell>
+                <Typography variant="body2">{review.taskName}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {review.createdAt}
+                </Typography>
+              </TableCell>
+              <TableCell>{review.customer.fullName}</TableCell>
+              <TableCell>{review.agent.fullName}</TableCell>
+              <TableCell>
+                <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                  <Chip label={`Overall ${review.ratings.overall}`} size="small" />
+                  <Chip label={`Comms ${review.ratings.communication}`} size="small" variant="outlined" />
+                  <Chip label={`Time ${review.ratings.timeliness}`} size="small" variant="outlined" />
+                  <Chip label={`Pro ${review.ratings.professionalism}`} size="small" variant="outlined" />
+                </Stack>
+              </TableCell>
+              <TableCell>{review.reviewText ?? ""}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Paper>
   );
 }
 

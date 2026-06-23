@@ -11,3 +11,4 @@ Current migration:
 - `005_phase5_call_foundation.sql`: call sessions, call status history, and in-app audio/video call metadata.
 - `006_phase6_admin_operations.sql`: agent verification decision metadata and admin verification indexes.
 - `007_phase7_disputes.sql`: task disputes, dispute status history, and admin-only mediation notes.
+- `008_phase8_reviews_reputation.sql`: one review per completed task, rating checks, and indexes for customer/agent review lists.
