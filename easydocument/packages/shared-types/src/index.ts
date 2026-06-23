@@ -28,6 +28,15 @@ export type CallStatus =
   | "ENDED"
   | "FAILED";
 
+export type DisputeStatus =
+  | "OPEN"
+  | "UNDER_REVIEW"
+  | "CUSTOMER_ACTION_REQUIRED"
+  | "AGENT_ACTION_REQUIRED"
+  | "RESOLVED"
+  | "REJECTED"
+  | "CANCELLED";
+
 export interface CallStatusHistoryEntry {
   id: string;
   actorUserId: string;
@@ -206,4 +215,89 @@ export interface AdminCommunicationAuditResponse {
   callCount: number;
   lastActivityAt: string | null;
   rawMessageBodyVisible: false;
+}
+
+export interface ParticipantDispute {
+  id: string;
+  taskId: string;
+  taskName: string;
+  roomId: string;
+  reason: string;
+  description: string;
+  openedBy: {
+    userId: string;
+    role: "CUSTOMER" | "AGENT";
+    fullName: string;
+  };
+  status: DisputeStatus;
+  resolutionSummary: string | null;
+  resolvedAt: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface DisputeStatusHistoryEntry {
+  id: string;
+  disputeId: string;
+  actor: {
+    userId: string;
+    role: string;
+    fullName: string;
+  };
+  oldStatus: DisputeStatus | null;
+  newStatus: DisputeStatus;
+  note: string | null;
+  createdAt: string | null;
+}
+
+export interface AdminDisputeSummary {
+  id: string;
+  task: {
+    id: string;
+    taskName: string;
+    status: TaskStatus;
+  };
+  customer: {
+    userId: string;
+    fullName: string;
+    phoneNumber: string;
+  };
+  agent: {
+    userId: string;
+    fullName: string;
+    phoneNumber: string;
+  };
+  roomId: string;
+  reason: string;
+  openedBy: {
+    userId: string;
+    role: "CUSTOMER" | "AGENT";
+    fullName: string;
+    phoneNumber: string;
+  };
+  status: DisputeStatus;
+  resolutionSummary: string | null;
+  resolvedByAdmin: {
+    userId: string;
+    fullName: string | null;
+  } | null;
+  resolvedAt: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface AdminMediationNote {
+  id: string;
+  adminUserId: string;
+  adminFullName: string;
+  note: string;
+  createdAt: string | null;
+}
+
+export interface AdminDisputeDetail extends AdminDisputeSummary {
+  description: string;
+  statusHistory: DisputeStatusHistoryEntry[];
+  mediationNotes: AdminMediationNote[];
+  taskTimeline: AdminTaskTimelineResponse["events"];
+  communicationAudit: AdminCommunicationAuditResponse;
 }

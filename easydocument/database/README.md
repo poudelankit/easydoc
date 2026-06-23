@@ -13,6 +13,7 @@ Phase 3 adds `migrations/003_phase3_communication.sql` for accepted-task chat ro
 Phase 4 adds `migrations/004_phase4_task_lifecycle.sql` for expanded lifecycle statuses, expected completion dates, and task status history.
 Phase 5 adds `migrations/005_phase5_call_foundation.sql` for call sessions and call status history.
 Phase 6 adds `migrations/006_phase6_admin_operations.sql` for agent verification decision metadata.
+Phase 7 adds `migrations/007_phase7_disputes.sql` for disputes and admin mediation notes.
 
 The migration covers the auth/profile/KYC foundation only:
 
@@ -53,3 +54,9 @@ Phase 6 adds these `agent_profiles` columns:
 - `verification_decided_by_user_id`
 - `verification_decided_at`
 - `verification_rejection_reason`
+
+Phase 7 adds:
+
+- `task_disputes`
+- `dispute_status_history`
+- `dispute_mediation_notes`

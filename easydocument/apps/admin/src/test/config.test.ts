@@ -1,14 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { adminNavigationItems, taskStatusOptions } from "../app/config";
+import { adminNavigationItems, disputeStatusOptions, taskStatusOptions } from "../app/config";
 
-describe("Phase 6 admin shell config", () => {
-  it("exposes the operational admin screens without mediation scope", () => {
+describe("Phase 7 admin shell config", () => {
+  it("exposes dispute mediation without payment/refund scope", () => {
     expect(adminNavigationItems.map((item) => item.label)).toEqual([
       "Dashboard",
       "Agent Verification",
-      "Task Monitoring"
+      "Task Monitoring",
+      "Disputes"
     ]);
     expect(taskStatusOptions).toContain("ACCEPTED");
-    expect(adminNavigationItems.map((item) => item.label)).not.toContain("Admin Mediation");
+    expect(disputeStatusOptions).toContain("UNDER_REVIEW");
+    expect(adminNavigationItems.map((item) => item.label)).not.toContain("Payments");
   });
 });

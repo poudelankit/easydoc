@@ -11,6 +11,7 @@ import { StorageModule } from "./modules/storage/storage.module";
 import { UsersModule } from "./modules/users/users.module";
 import { AdminModule } from "./modules/admin/admin.module";
 import { CommunicationModule } from "./modules/communication/communication.module";
+import { DisputesModule } from "./modules/disputes/disputes.module";
 import { TasksModule } from "./modules/tasks/tasks.module";
 
 @Module({
@@ -23,6 +24,7 @@ import { TasksModule } from "./modules/tasks/tasks.module";
     AuthModule,
     UsersModule,
     CommunicationModule,
+    DisputesModule,
     CustomersModule,
     TasksModule,
     AgentsModule,

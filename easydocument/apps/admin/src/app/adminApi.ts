@@ -4,11 +4,14 @@ import type {
   AdminAgentVerificationSummary,
   AdminCommunicationAuditResponse,
   AdminDashboardResponse,
+  AdminDisputeDetail,
+  AdminDisputeSummary,
   AdminTaskDetail,
   AdminTaskSummary,
   AdminTaskTimelineResponse,
   AuthResponse,
   AuthUser,
+  DisputeStatus,
   TaskStatus
 } from "@easydocument/shared-types";
 
@@ -120,6 +123,44 @@ export function getCommunicationAudit(token: string, taskId: string) {
     `/admin/tasks/${taskId}/communication-audit`,
     { token }
   );
+}
+
+export function getDisputes(token: string, status?: DisputeStatus | "") {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  return apiRequest<AdminDisputeSummary[]>(`/admin/disputes${query}`, { token });
+}
+
+export function getDispute(token: string, disputeId: string) {
+  return apiRequest<AdminDisputeDetail>(`/admin/disputes/${disputeId}`, { token });
+}
+
+export function addMediationNote(token: string, disputeId: string, note: string) {
+  return apiRequest<AdminDisputeDetail>(`/admin/disputes/${disputeId}/notes`, {
+    method: "POST",
+    token,
+    body: { note }
+  });
+}
+
+export function updateDisputeStatus(
+  token: string,
+  disputeId: string,
+  status: DisputeStatus,
+  note?: string
+) {
+  return apiRequest<AdminDisputeDetail>(`/admin/disputes/${disputeId}/status`, {
+    method: "POST",
+    token,
+    body: { status, note }
+  });
+}
+
+export function resolveDispute(token: string, disputeId: string, resolutionSummary: string) {
+  return apiRequest<AdminDisputeDetail>(`/admin/disputes/${disputeId}/resolve`, {
+    method: "POST",
+    token,
+    body: { resolutionSummary }
+  });
 }
 
 async function apiRequest<T>(

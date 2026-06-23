@@ -27,9 +27,12 @@ import type {
   AdminAgentVerificationSummary,
   AdminCommunicationAuditResponse,
   AdminDashboardResponse,
+  AdminDisputeDetail,
+  AdminDisputeSummary,
   AdminTaskDetail,
   AdminTaskSummary,
   AdminTaskTimelineResponse,
+  DisputeStatus,
   TaskStatus
 } from "@easydocument/shared-types";
 import { FormEvent, useEffect, useState } from "react";
@@ -45,22 +48,27 @@ import {
 import {
   AdminSession,
   ApiError,
+  addMediationNote,
   approveAgent,
   clearStoredSession,
   getAgent,
   getCommunicationAudit,
   getDashboard,
+  getDispute,
+  getDisputes,
   getPendingAgents,
   getTask,
   getTaskTimeline,
   getTasks,
   loadStoredSession,
   rejectAgent,
+  resolveDispute,
   sendOtp,
   storeSession,
+  updateDisputeStatus,
   verifyOtp
 } from "./adminApi";
-import { adminNavigationItems, apiBaseUrl, taskStatusOptions } from "./config";
+import { adminNavigationItems, apiBaseUrl, disputeStatusOptions, taskStatusOptions } from "./config";
 
 export function AdminShell() {
   const [session, setSession] = useState<AdminSession | null>(() => loadStoredSession());
@@ -108,6 +116,8 @@ export function AdminShell() {
               <Route path="/agents/:agentId" element={<AgentDetail token={session.accessToken} />} />
               <Route path="/tasks" element={<TaskMonitoring token={session.accessToken} />} />
               <Route path="/tasks/:taskId" element={<TaskDetail token={session.accessToken} />} />
+              <Route path="/disputes" element={<DisputeList token={session.accessToken} />} />
+              <Route path="/disputes/:disputeId" element={<DisputeDetail token={session.accessToken} />} />
             </Routes>
           </Box>
         </Container>
@@ -427,6 +437,264 @@ function TaskDetail({ token }: { token: string }) {
       <TimelinePanel timeline={timelineResource.data} error={timelineResource.error} />
       <CommunicationAuditPanel audit={auditResource.data} error={auditResource.error} />
     </Stack>
+  );
+}
+
+function DisputeList({ token }: { token: string }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const status = (searchParams.get("status") ?? "") as DisputeStatus | "";
+  const { data, error, loading, reload } = useResource(() => getDisputes(token, status), [token, status]);
+
+  function handleStatusChange(nextStatus: string) {
+    setSearchParams(nextStatus ? { status: nextStatus } : {});
+  }
+
+  if (loading) {
+    return <LoadingPanel title="Disputes" />;
+  }
+  if (error || !data) {
+    return <ErrorPanel title="Disputes" error={error} />;
+  }
+
+  return (
+    <Stack spacing={2}>
+      <Stack direction={{ xs: "column", md: "row" }} alignItems={{ md: "center" }} spacing={2}>
+        <Typography variant="h5" component="h2" flexGrow={1}>
+          Disputes
+        </Typography>
+        <TextField
+          select
+          label="Status"
+          value={status}
+          onChange={(event) => handleStatusChange(event.target.value)}
+          sx={{ minWidth: 240 }}
+        >
+          <MenuItem value="">All</MenuItem>
+          {disputeStatusOptions.map((option) => (
+            <MenuItem key={option} value={option}>
+              {option}
+            </MenuItem>
+          ))}
+        </TextField>
+        <Button onClick={reload}>Refresh</Button>
+      </Stack>
+      <DisputeTable disputes={data} />
+    </Stack>
+  );
+}
+
+function DisputeDetail({ token }: { token: string }) {
+  const { disputeId } = useParams();
+  const { data, error, loading, setData } = useResource(
+    () => (disputeId ? getDispute(token, disputeId) : Promise.reject(new Error("Missing dispute id"))),
+    [token, disputeId]
+  );
+  const [note, setNote] = useState("");
+  const [status, setStatus] = useState<DisputeStatus>("UNDER_REVIEW");
+  const [statusNote, setStatusNote] = useState("");
+  const [resolutionSummary, setResolutionSummary] = useState("");
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  async function handleAddNote() {
+    if (!disputeId) {
+      return;
+    }
+    setActionError(null);
+    try {
+      setData(await addMediationNote(token, disputeId, note));
+      setNote("");
+    } catch (error) {
+      setActionError(readError(error));
+    }
+  }
+
+  async function handleStatusUpdate() {
+    if (!disputeId) {
+      return;
+    }
+    setActionError(null);
+    try {
+      setData(await updateDisputeStatus(token, disputeId, status, statusNote));
+      setStatusNote("");
+    } catch (error) {
+      setActionError(readError(error));
+    }
+  }
+
+  async function handleResolve() {
+    if (!disputeId) {
+      return;
+    }
+    setActionError(null);
+    try {
+      setData(await resolveDispute(token, disputeId, resolutionSummary));
+      setResolutionSummary("");
+    } catch (error) {
+      setActionError(readError(error));
+    }
+  }
+
+  if (loading) {
+    return <LoadingPanel title="Dispute Detail" />;
+  }
+  if (error || !data) {
+    return <ErrorPanel title="Dispute Detail" error={error} />;
+  }
+
+  return (
+    <Stack spacing={3}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between">
+        <Typography variant="h5" component="h2">
+          Dispute Detail
+        </Typography>
+        <Chip label={data.status} />
+      </Stack>
+      {actionError ? <Alert severity="error">{actionError}</Alert> : null}
+      <DisputeSummaryPanel dispute={data} />
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Typography variant="h6">Mediation Notes</Typography>
+        <Stack spacing={2} mt={2}>
+          <TextField
+            label="Internal admin note"
+            value={note}
+            onChange={(event) => setNote(event.target.value)}
+            multiline
+            minRows={3}
+            fullWidth
+          />
+          <Button variant="contained" onClick={handleAddNote}>
+            Add Note
+          </Button>
+          {data.mediationNotes.map((entry) => (
+            <Alert key={entry.id} severity="info">
+              {entry.note} - {entry.adminFullName}
+            </Alert>
+          ))}
+        </Stack>
+      </Paper>
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Typography variant="h6">Status Update</Typography>
+        <Stack direction={{ xs: "column", md: "row" }} spacing={2} mt={2}>
+          <TextField
+            select
+            label="Status"
+            value={status}
+            onChange={(event) => setStatus(event.target.value as DisputeStatus)}
+            sx={{ minWidth: 260 }}
+          >
+            {disputeStatusOptions
+              .filter((option) => option !== "RESOLVED")
+              .map((option) => (
+                <MenuItem key={option} value={option}>
+                  {option}
+                </MenuItem>
+              ))}
+          </TextField>
+          <TextField
+            label="Status note"
+            value={statusNote}
+            onChange={(event) => setStatusNote(event.target.value)}
+            fullWidth
+          />
+          <Button variant="outlined" onClick={handleStatusUpdate}>
+            Update
+          </Button>
+        </Stack>
+      </Paper>
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Typography variant="h6">Resolution</Typography>
+        <Stack spacing={2} mt={2}>
+          <TextField
+            label="Resolution summary"
+            value={resolutionSummary}
+            onChange={(event) => setResolutionSummary(event.target.value)}
+            multiline
+            minRows={3}
+            fullWidth
+          />
+          <Button variant="contained" color="success" onClick={handleResolve}>
+            Resolve
+          </Button>
+          {data.resolutionSummary ? <Alert severity="success">{data.resolutionSummary}</Alert> : null}
+        </Stack>
+      </Paper>
+      <DisputeHistoryPanel dispute={data} />
+      <TimelinePanel timeline={{ taskId: data.task.id, currentStatus: data.task.status, expectedCompletionDate: null, events: data.taskTimeline }} error={null} />
+      <CommunicationAuditPanel audit={data.communicationAudit} error={null} />
+    </Stack>
+  );
+}
+
+function DisputeTable({ disputes }: { disputes: AdminDisputeSummary[] }) {
+  return (
+    <Paper variant="outlined">
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell>Dispute</TableCell>
+            <TableCell>Task</TableCell>
+            <TableCell>Opened By</TableCell>
+            <TableCell>Status</TableCell>
+            <TableCell align="right">Action</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {disputes.map((dispute) => (
+            <TableRow key={dispute.id}>
+              <TableCell>
+                <Typography variant="body2">{dispute.reason}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {dispute.createdAt}
+                </Typography>
+              </TableCell>
+              <TableCell>{dispute.task.taskName}</TableCell>
+              <TableCell>{dispute.openedBy.fullName} ({dispute.openedBy.role})</TableCell>
+              <TableCell>
+                <Chip label={dispute.status} size="small" />
+              </TableCell>
+              <TableCell align="right">
+                <Button component={RouterLink} to={`/disputes/${dispute.id}`} size="small">
+                  View
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Paper>
+  );
+}
+
+function DisputeSummaryPanel({ dispute }: { dispute: AdminDisputeDetail }) {
+  return (
+    <Paper variant="outlined" sx={{ p: 2 }}>
+      <Stack spacing={1}>
+        <Typography variant="h6">{dispute.reason}</Typography>
+        <Typography variant="body2">{dispute.description}</Typography>
+        <Divider />
+        <Typography variant="body2">Task: {dispute.task.taskName} ({dispute.task.status})</Typography>
+        <Typography variant="body2">Customer: {dispute.customer.fullName} ({dispute.customer.phoneNumber})</Typography>
+        <Typography variant="body2">Agent: {dispute.agent.fullName} ({dispute.agent.phoneNumber})</Typography>
+        <Typography variant="body2">Opened by: {dispute.openedBy.fullName} ({dispute.openedBy.role})</Typography>
+      </Stack>
+    </Paper>
+  );
+}
+
+function DisputeHistoryPanel({ dispute }: { dispute: AdminDisputeDetail }) {
+  return (
+    <Paper variant="outlined" sx={{ p: 2 }}>
+      <Typography variant="h6">Dispute Status History</Typography>
+      <List dense>
+        {dispute.statusHistory.map((event) => (
+          <ListItemText
+            key={event.id}
+            primary={`${event.oldStatus ?? "NEW"} -> ${event.newStatus}`}
+            secondary={`${event.actor.fullName} (${event.actor.role})${event.note ? ` - ${event.note}` : ""}`}
+          />
+        ))}
+      </List>
+    </Paper>
   );
 }
 

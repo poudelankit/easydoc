@@ -13,10 +13,11 @@ Node.js + NestJS backend API for EasyDocument.
 - MinIO private file storage.
 - Socket.IO realtime foundation.
 - Admin operational management.
+- Dispute and admin mediation workflow.
 
 ## Current State
 
-This folder contains the Phase 6 NestJS API foundation for auth, profiles, task creation, nearby task discovery, task acceptance, accepted-task communication, task lifecycle tracking, in-app call signaling metadata, and admin operational management.
+This folder contains the Phase 7 NestJS API foundation for auth, profiles, task creation, nearby task discovery, task acceptance, accepted-task communication, task lifecycle tracking, in-app call signaling metadata, admin operational management, and dispute mediation.
 
 ## Implemented Endpoints
 
@@ -53,6 +54,9 @@ This folder contains the Phase 6 NestJS API foundation for auth, profiles, task 
 - `GET /v1/tasks/:taskId/calls`
 - `POST /v1/tasks/:taskId/calls`
 - `POST /v1/tasks/:taskId/calls/:callId/end`
+- `POST /v1/tasks/:taskId/disputes`
+- `GET /v1/tasks/:taskId/disputes`
+- `GET /v1/disputes/:disputeId`
 - `GET /v1/admin/me`
 - `GET /v1/admin/dashboard`
 - `GET /v1/admin/agents/pending`
@@ -63,6 +67,11 @@ This folder contains the Phase 6 NestJS API foundation for auth, profiles, task 
 - `GET /v1/admin/tasks/:taskId`
 - `GET /v1/admin/tasks/:taskId/timeline`
 - `GET /v1/admin/tasks/:taskId/communication-audit`
+- `GET /v1/admin/disputes`
+- `GET /v1/admin/disputes/:disputeId`
+- `POST /v1/admin/disputes/:disputeId/notes`
+- `POST /v1/admin/disputes/:disputeId/status`
+- `POST /v1/admin/disputes/:disputeId/resolve`
 
 ## Socket.IO Events
 

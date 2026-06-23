@@ -240,6 +240,8 @@ class CustomerTaskShellScreen extends StatelessWidget {
         SizedBox(height: 24),
         CustomerTaskTimelineScreen(),
         SizedBox(height: 24),
+        TaskDisputeScreen(),
+        SizedBox(height: 24),
         TaskCallControlsScreen(),
         SizedBox(height: 24),
         TaskChatScreen(),
@@ -382,6 +384,8 @@ class AgentTaskShellScreen extends StatelessWidget {
         SizedBox(height: 24),
         AgentProgressUpdateScreen(),
         SizedBox(height: 24),
+        TaskDisputeScreen(),
+        SizedBox(height: 24),
         TaskCallControlsScreen(),
         SizedBox(height: 24),
         TaskChatScreen(),
@@ -499,6 +503,94 @@ class CompleteTaskButtonPlaceholder extends StatelessWidget {
       onPressed: null,
       icon: const Icon(Icons.task_alt),
       label: const Text('Complete Task'),
+    );
+  }
+}
+
+class TaskDisputeScreen extends StatelessWidget {
+  const TaskDisputeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _TaskPanel(
+      title: 'Task Dispute',
+      children: [
+        OpenDisputePlaceholder(),
+        SizedBox(height: 12),
+        DisputeStatusPlaceholder(),
+        SizedBox(height: 12),
+        ResolutionSummaryPlaceholder(),
+      ],
+    );
+  }
+}
+
+class OpenDisputePlaceholder extends StatelessWidget {
+  const OpenDisputePlaceholder({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          decoration: InputDecoration(
+            labelText: 'Dispute reason',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        SizedBox(height: 12),
+        TextField(
+          minLines: 3,
+          maxLines: 5,
+          decoration: InputDecoration(
+            labelText: 'Dispute description',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        SizedBox(height: 12),
+        _ButtonRow(
+          primaryLabel: 'Open Dispute',
+          secondaryLabel: 'View Status',
+        ),
+      ],
+    );
+  }
+}
+
+class DisputeStatusPlaceholder extends StatelessWidget {
+  const DisputeStatusPlaceholder({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _ReadonlyLine(label: 'Status', value: 'OPEN, UNDER_REVIEW, ACTION_REQUIRED, or RESOLVED'),
+        _ReadonlyLine(label: 'Opened by', value: 'Customer or assigned agent'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _StatusChip(label: 'OPEN'),
+            _StatusChip(label: 'UNDER_REVIEW'),
+            _StatusChip(label: 'CUSTOMER_ACTION_REQUIRED'),
+            _StatusChip(label: 'AGENT_ACTION_REQUIRED'),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class ResolutionSummaryPlaceholder extends StatelessWidget {
+  const ResolutionSummaryPlaceholder({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _ReadonlyLine(
+      label: 'Resolution',
+      value: 'Visible after admin resolves the dispute',
     );
   }
 }
