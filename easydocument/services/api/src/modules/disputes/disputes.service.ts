@@ -1,8 +1,9 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, Optional } from "@nestjs/common";
 import { PoolClient, QueryResultRow } from "pg";
 import { AuthenticatedUser, RequestContext } from "../../common/types/authenticated-user";
 import { AuditService } from "../audit/audit.service";
 import { DatabaseService } from "../database/database.service";
+import { NotificationsService } from "../notifications/notifications.service";
 import {
   AddMediationNoteDto,
   DISPUTE_STATUSES,
@@ -120,7 +121,8 @@ interface CommunicationAuditRow extends QueryResultRow {
 export class DisputesService {
   constructor(
     private readonly database: DatabaseService,
-    private readonly audit: AuditService
+    private readonly audit: AuditService,
+    @Optional() private readonly notifications?: NotificationsService
   ) {}
 
   async createTaskDispute(
@@ -185,6 +187,29 @@ export class DisputesService {
       afterData: { taskId, reason: dto.reason.trim(), openedByRole: user.role },
       context
     });
+
+    if (this.notifications) {
+      const dispute = await this.loadDispute(disputeId);
+      const otherParticipantUserId =
+        user.id === dispute.customer_user_id ? dispute.agent_user_id : dispute.customer_user_id;
+      await this.notifications.createNotification({
+        recipientUserId: otherParticipantUserId,
+        actorUserId: user.id,
+        type: "DISPUTE_OPENED",
+        title: "Dispute opened",
+        body: `${dispute.task_name} has a new dispute: ${dispute.reason}`,
+        relatedTaskId: dispute.task_id,
+        relatedDisputeId: dispute.id
+      });
+      await this.notifications.createForAdmins({
+        actorUserId: user.id,
+        type: "DISPUTE_OPENED",
+        title: "Dispute opened",
+        body: `${dispute.task_name} has a new dispute for review.`,
+        relatedTaskId: dispute.task_id,
+        relatedDisputeId: dispute.id
+      });
+    }
 
     return this.getParticipantDispute(disputeId, user);
   }
@@ -336,6 +361,30 @@ export class DisputesService {
       context
     });
 
+    if (this.notifications) {
+      const dispute = await this.loadDispute(disputeId);
+      await this.notifications.createMany([
+        {
+          recipientUserId: dispute.customer_user_id,
+          actorUserId: admin.id,
+          type: "DISPUTE_STATUS_UPDATED",
+          title: "Dispute status updated",
+          body: `Dispute status changed to ${dto.status}.`,
+          relatedTaskId: dispute.task_id,
+          relatedDisputeId: dispute.id
+        },
+        {
+          recipientUserId: dispute.agent_user_id,
+          actorUserId: admin.id,
+          type: "DISPUTE_STATUS_UPDATED",
+          title: "Dispute status updated",
+          body: `Dispute status changed to ${dto.status}.`,
+          relatedTaskId: dispute.task_id,
+          relatedDisputeId: dispute.id
+        }
+      ]);
+    }
+
     return this.getAdminDispute(disputeId);
   }
 
@@ -383,6 +432,30 @@ export class DisputesService {
       afterData: { resolutionSummary },
       context
     });
+
+    if (this.notifications) {
+      const dispute = await this.loadDispute(disputeId);
+      await this.notifications.createMany([
+        {
+          recipientUserId: dispute.customer_user_id,
+          actorUserId: admin.id,
+          type: "DISPUTE_RESOLVED",
+          title: "Dispute resolved",
+          body: "A dispute was resolved by an admin.",
+          relatedTaskId: dispute.task_id,
+          relatedDisputeId: dispute.id
+        },
+        {
+          recipientUserId: dispute.agent_user_id,
+          actorUserId: admin.id,
+          type: "DISPUTE_RESOLVED",
+          title: "Dispute resolved",
+          body: "A dispute was resolved by an admin.",
+          relatedTaskId: dispute.task_id,
+          relatedDisputeId: dispute.id
+        }
+      ]);
+    }
 
     return this.getAdminDispute(disputeId);
   }

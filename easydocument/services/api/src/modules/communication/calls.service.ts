@@ -1,8 +1,9 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException, Optional } from "@nestjs/common";
 import { PoolClient, QueryResultRow } from "pg";
 import { AuthenticatedUser, RequestContext } from "../../common/types/authenticated-user";
 import { AuditService } from "../audit/audit.service";
 import { DatabaseService } from "../database/database.service";
+import { NotificationsService } from "../notifications/notifications.service";
 import { CallEndStatus, CreateCallDto, EndCallDto } from "./dto/call.dto";
 
 type CallType = "AUDIO" | "VIDEO";
@@ -71,7 +72,8 @@ interface CallStatusHistoryRow extends QueryResultRow {
 export class CallsService {
   constructor(
     private readonly database: DatabaseService,
-    private readonly audit: AuditService
+    private readonly audit: AuditService,
+    @Optional() private readonly notifications?: NotificationsService
   ) {}
 
   async listCalls(taskId: string, user: AuthenticatedUser) {
@@ -93,7 +95,7 @@ export class CallsService {
     dto: CreateCallDto,
     context?: RequestContext
   ) {
-    const callId = await this.database.transaction(async (client) => {
+    const callSession = await this.database.transaction(async (client) => {
       const task = await this.getAuthorizedTask(taskId, user, client);
       this.assertTaskCanStartCall(task);
 
@@ -121,19 +123,32 @@ export class CallsService {
         note: "Ringing task participant",
         signalingEvent: "call:ringing"
       });
-      return call.id;
+      return {
+        id: call.id,
+        recipientUserId:
+          user.id === task.customer_user_id ? task.agent_user_id : task.customer_user_id
+      };
     });
 
     await this.audit.write({
       actorUserId: user.id,
       action: "CALL_SESSION_REQUESTED",
       entityType: "call_sessions",
-      entityId: callId,
+      entityId: callSession.id,
       afterData: { taskId, callType: dto.callType },
       context
     });
 
-    return this.getCallForTask(taskId, callId, user);
+    await this.notifications?.createNotification({
+      recipientUserId: callSession.recipientUserId,
+      actorUserId: user.id,
+      type: "CALL_REQUESTED",
+      title: `${dto.callType === "VIDEO" ? "Video" : "Audio"} call requested`,
+      body: "A task participant requested a call.",
+      relatedTaskId: taskId
+    });
+
+    return this.getCallForTask(taskId, callSession.id, user);
   }
 
   async acceptCall(taskId: string, callId: string, user: AuthenticatedUser, context?: RequestContext) {

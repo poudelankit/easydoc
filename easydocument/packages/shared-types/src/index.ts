@@ -37,6 +37,66 @@ export type DisputeStatus =
   | "REJECTED"
   | "CANCELLED";
 
+export type NotificationType =
+  | "OTP_SENT"
+  | "AGENT_VERIFICATION_APPROVED"
+  | "AGENT_VERIFICATION_REJECTED"
+  | "TASK_CREATED"
+  | "TASK_ACCEPTED"
+  | "DEAL_CONFIRMED"
+  | "TASK_STATUS_UPDATED"
+  | "MESSAGE_RECEIVED"
+  | "ATTACHMENT_RECEIVED"
+  | "CALL_REQUESTED"
+  | "CALL_MISSED"
+  | "DISPUTE_OPENED"
+  | "DISPUTE_STATUS_UPDATED"
+  | "DISPUTE_RESOLVED"
+  | "REVIEW_RECEIVED";
+
+export type NotificationDeliveryChannel = "IN_APP" | "SMS_PLACEHOLDER" | "PUSH_PLACEHOLDER";
+
+export interface NotificationPayload {
+  id: string;
+  recipientUserId: string;
+  actor: {
+    userId: string;
+    fullName: string | null;
+  } | null;
+  type: NotificationType;
+  deliveryChannel: NotificationDeliveryChannel;
+  title: string;
+  body: string;
+  relatedTaskId: string | null;
+  relatedDisputeId: string | null;
+  relatedReviewId: string | null;
+  readAt: string | null;
+  createdAt: string | null;
+}
+
+export interface NotificationUnreadCountResponse {
+  unreadCount: number;
+}
+
+export interface MarkAllNotificationsReadResponse {
+  markedReadCount: number;
+  readAt: string | null;
+}
+
+export interface AdminNotificationSummaryResponse {
+  totalNotifications: number;
+  unreadNotifications: number;
+  byType: Array<{
+    type: NotificationType;
+    count: number;
+    unreadCount: number;
+  }>;
+  byChannel: Array<{
+    deliveryChannel: NotificationDeliveryChannel;
+    count: number;
+  }>;
+}
+
 export interface CallStatusHistoryEntry {
   id: string;
   actorUserId: string;

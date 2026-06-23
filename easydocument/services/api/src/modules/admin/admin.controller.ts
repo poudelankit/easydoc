@@ -10,6 +10,7 @@ import {
   UpdateDisputeStatusDto
 } from "../disputes/dto/admin-dispute.dto";
 import { DisputesService } from "../disputes/disputes.service";
+import { NotificationsService } from "../notifications/notifications.service";
 import { ReviewsService } from "../reviews/reviews.service";
 import { UsersService } from "../users/users.service";
 import { AdminService } from "./admin.service";
@@ -23,7 +24,8 @@ export class AdminController {
     private readonly usersService: UsersService,
     private readonly adminService: AdminService,
     private readonly disputesService: DisputesService,
-    private readonly reviewsService: ReviewsService
+    private readonly reviewsService: ReviewsService,
+    private readonly notificationsService: NotificationsService
   ) {}
 
   @Get("me")
@@ -100,6 +102,11 @@ export class AdminController {
   @Get("reviews")
   listReviews() {
     return this.reviewsService.listAdminReviews();
+  }
+
+  @Get("notifications/summary")
+  getNotificationSummary(@CurrentUser() user: AuthenticatedUser) {
+    return this.notificationsService.getAdminSummary(user);
   }
 
   @Post("disputes/:disputeId/notes")

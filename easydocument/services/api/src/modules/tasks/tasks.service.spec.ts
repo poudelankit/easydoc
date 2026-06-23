@@ -2,6 +2,7 @@ import { ConflictException, ForbiddenException } from "@nestjs/common";
 import { AuditService } from "../audit/audit.service";
 import { CommunicationService } from "../communication/communication.service";
 import { DatabaseService } from "../database/database.service";
+import { NotificationsService } from "../notifications/notifications.service";
 import { StorageService } from "../storage/storage.service";
 import { UsersService } from "../users/users.service";
 import { CreateTaskDto } from "./dto/create-task.dto";
@@ -48,16 +49,20 @@ function createMocks() {
   const communication = {
     ensureRoomForAcceptedTask: jest.fn()
   };
+  const notifications = {
+    createNotification: jest.fn()
+  };
 
   const service = new TasksService(
     database as unknown as DatabaseService,
     users as unknown as UsersService,
     storage as unknown as StorageService,
     audit as unknown as AuditService,
-    communication as unknown as CommunicationService
+    communication as unknown as CommunicationService,
+    notifications as unknown as NotificationsService
   );
 
-  return { audit, communication, database, query, service, storage, users };
+  return { audit, communication, database, notifications, query, service, storage, users };
 }
 
 function taskRow(overrides: Record<string, unknown> = {}) {
@@ -224,13 +229,15 @@ describe("TasksService", () => {
   });
 
   it("accepts a nearby created request and returns assigned task details", async () => {
-    const { audit, communication, query, service } = createMocks();
+    const { audit, communication, notifications, query, service } = createMocks();
     query
       .mockResolvedValueOnce({ rows: [agentLocationRow()] })
       .mockResolvedValueOnce({
         rows: [
           {
             id: "task-id",
+            customer_user_id: customerUser.id,
+            task_name: "SITA CUSTOMER-CITIZENSHIP-CDAO",
             status: "CREATED",
             assigned_agent_user_id: null,
             distance_meters: 1500
@@ -270,6 +277,14 @@ describe("TasksService", () => {
     expect(result.assignedAgent.userId).toBe(agentUser.id);
     expect(result.customer.phoneNumber).toBe(customerUser.phoneNumber);
     expect(audit.write).toHaveBeenCalledWith(expect.objectContaining({ action: "TASK_ACCEPTED" }));
+    expect(notifications.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientUserId: customerUser.id,
+        actorUserId: agentUser.id,
+        type: "TASK_ACCEPTED",
+        relatedTaskId: "task-id"
+      })
+    );
   });
 
   it("rejects accepting an already accepted task", async () => {
@@ -291,7 +306,7 @@ describe("TasksService", () => {
   });
 
   it("lets the task customer confirm the deal from accepted state", async () => {
-    const { audit, query, service } = createMocks();
+    const { audit, notifications, query, service } = createMocks();
     query
       .mockResolvedValueOnce({ rows: [lifecycleTaskRow({ status: "ACCEPTED" })] })
       .mockResolvedValueOnce({ rows: [] })
@@ -326,10 +341,18 @@ describe("TasksService", () => {
     expect(audit.write).toHaveBeenCalledWith(
       expect.objectContaining({ action: "TASK_DEAL_CONFIRMED" })
     );
+    expect(notifications.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientUserId: agentUser.id,
+        actorUserId: customerUser.id,
+        type: "DEAL_CONFIRMED",
+        relatedTaskId: "task-id"
+      })
+    );
   });
 
   it("lets the assigned agent set the expected completion date", async () => {
-    const { audit, query, service } = createMocks();
+    const { audit, notifications, query, service } = createMocks();
     query
       .mockResolvedValueOnce({ rows: [lifecycleTaskRow({ status: "DEAL_CONFIRMED" })] })
       .mockResolvedValueOnce({ rows: [] })
@@ -372,7 +395,7 @@ describe("TasksService", () => {
   });
 
   it("lets the assigned agent update progress with valid transitions", async () => {
-    const { audit, query, service } = createMocks();
+    const { audit, notifications, query, service } = createMocks();
     query
       .mockResolvedValueOnce({ rows: [lifecycleTaskRow({ status: "DEAL_CONFIRMED" })] })
       .mockResolvedValueOnce({ rows: [] })
@@ -406,6 +429,14 @@ describe("TasksService", () => {
     ]);
     expect(audit.write).toHaveBeenCalledWith(
       expect.objectContaining({ action: "TASK_PROGRESS_UPDATED" })
+    );
+    expect(notifications.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientUserId: customerUser.id,
+        actorUserId: agentUser.id,
+        type: "TASK_STATUS_UPDATED",
+        relatedTaskId: "task-id"
+      })
     );
   });
 

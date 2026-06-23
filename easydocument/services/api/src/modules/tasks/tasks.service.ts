@@ -3,13 +3,15 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
-  NotFoundException
+  NotFoundException,
+  Optional
 } from "@nestjs/common";
 import { PoolClient, QueryResultRow } from "pg";
 import { AuthenticatedUser, RequestContext } from "../../common/types/authenticated-user";
 import { AuditService } from "../audit/audit.service";
 import { CommunicationService } from "../communication/communication.service";
 import { DatabaseService } from "../database/database.service";
+import { NotificationsService } from "../notifications/notifications.service";
 import { StorageService } from "../storage/storage.service";
 import { UsersService } from "../users/users.service";
 import { CreateTaskDto, SupportingDocumentPlaceholderDto } from "./dto/create-task.dto";
@@ -104,6 +106,8 @@ interface AgentLocationRow extends QueryResultRow {
 
 interface AcceptCandidateRow extends QueryResultRow {
   id: string;
+  customer_user_id: string;
+  task_name: string;
   status: TaskStatus;
   assigned_agent_user_id: string | null;
   distance_meters: string | number;
@@ -147,7 +151,8 @@ export class TasksService {
     private readonly users: UsersService,
     private readonly storage: StorageService,
     private readonly audit: AuditService,
-    private readonly communication: CommunicationService
+    private readonly communication: CommunicationService,
+    @Optional() private readonly notifications?: NotificationsService
   ) {}
 
   async createTask(user: AuthenticatedUser, dto: CreateTaskDto, context: RequestContext) {
@@ -222,6 +227,15 @@ export class TasksService {
         organizationLongitude: dto.organizationLongitude
       },
       context
+    });
+
+    await this.notifications?.createNotification({
+      recipientUserId: user.id,
+      actorUserId: user.id,
+      type: "TASK_CREATED",
+      title: "Task created",
+      body: `${insertedTask.task_name} was created.`,
+      relatedTaskId: insertedTask.id
     });
 
     return this.getTaskById(user, insertedTask.id);
@@ -308,10 +322,12 @@ export class TasksService {
     const agent = await this.getAgentPermanentLocation(user.id);
     this.assertAgentAvailability(agent);
 
-    const acceptedTaskId = await this.database.transaction(async (client) => {
+    const acceptedTask = await this.database.transaction(async (client) => {
       const candidateResult = await client.query<AcceptCandidateRow>(
         `SELECT
            id,
+           customer_user_id,
+           task_name,
            status::text AS status,
            assigned_agent_user_id,
            ST_Distance(
@@ -358,14 +374,18 @@ export class TasksService {
 
       await this.communication.ensureRoomForAcceptedTask(candidate.id, client);
 
-      return candidate.id;
+      return {
+        id: candidate.id,
+        customerUserId: candidate.customer_user_id,
+        taskName: candidate.task_name
+      };
     });
 
     await this.audit.write({
       actorUserId: user.id,
       action: "TASK_ACCEPTED",
       entityType: "document_tasks",
-      entityId: acceptedTaskId,
+      entityId: acceptedTask.id,
       afterData: {
         status: "ACCEPTED",
         assignedAgentUserId: user.id,
@@ -374,7 +394,16 @@ export class TasksService {
       context
     });
 
-    return this.getTaskById(user, acceptedTaskId);
+    await this.notifications?.createNotification({
+      recipientUserId: acceptedTask.customerUserId,
+      actorUserId: user.id,
+      type: "TASK_ACCEPTED",
+      title: "Task accepted",
+      body: `${acceptedTask.taskName} was accepted by an agent.`,
+      relatedTaskId: acceptedTask.id
+    });
+
+    return this.getTaskById(user, acceptedTask.id);
   }
 
   async confirmDeal(
@@ -383,23 +412,34 @@ export class TasksService {
     dto: TaskLifecycleNoteDto,
     context: RequestContext
   ) {
-    const confirmedTaskId = await this.database.transaction(async (client) => {
+    const confirmedTask = await this.database.transaction(async (client) => {
       const task = await this.getLifecycleTaskForUpdate(client, taskId);
       this.assertTaskCustomer(task, user, "confirm this task");
       await this.applyStatusTransition(client, task, user, "DEAL_CONFIRMED", dto.note);
-      return task.id;
+      return task;
     });
 
     await this.audit.write({
       actorUserId: user.id,
       action: "TASK_DEAL_CONFIRMED",
       entityType: "document_tasks",
-      entityId: confirmedTaskId,
+      entityId: confirmedTask.id,
       afterData: { status: "DEAL_CONFIRMED", note: this.cleanNote(dto.note) },
       context
     });
 
-    return this.getTaskById(user, confirmedTaskId);
+    if (confirmedTask.assigned_agent_user_id) {
+      await this.notifications?.createNotification({
+        recipientUserId: confirmedTask.assigned_agent_user_id,
+        actorUserId: user.id,
+        type: "DEAL_CONFIRMED",
+        title: "Deal confirmed",
+        body: "The customer confirmed the deal and the task is ready to start.",
+        relatedTaskId: confirmedTask.id
+      });
+    }
+
+    return this.getTaskById(user, confirmedTask.id);
   }
 
   async setExpectedCompletionDate(
@@ -455,23 +495,32 @@ export class TasksService {
     dto: UpdateTaskStatusDto,
     context: RequestContext
   ) {
-    const updatedTaskId = await this.database.transaction(async (client) => {
+    const updatedTask = await this.database.transaction(async (client) => {
       const task = await this.getLifecycleTaskForUpdate(client, taskId);
       this.assertTaskAgent(task, user, "update task progress");
       await this.applyStatusTransition(client, task, user, dto.status, dto.note);
-      return task.id;
+      return task;
     });
 
     await this.audit.write({
       actorUserId: user.id,
       action: "TASK_PROGRESS_UPDATED",
       entityType: "document_tasks",
-      entityId: updatedTaskId,
+      entityId: updatedTask.id,
       afterData: { status: dto.status, note: this.cleanNote(dto.note) },
       context
     });
 
-    return this.getTaskById(user, updatedTaskId);
+    await this.notifications?.createNotification({
+      recipientUserId: updatedTask.customer_user_id,
+      actorUserId: user.id,
+      type: "TASK_STATUS_UPDATED",
+      title: "Task status updated",
+      body: `Task status changed to ${dto.status}.`,
+      relatedTaskId: updatedTask.id
+    });
+
+    return this.getTaskById(user, updatedTask.id);
   }
 
   async completeTask(

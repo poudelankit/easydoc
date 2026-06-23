@@ -1,8 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException, Optional } from "@nestjs/common";
 import { PoolClient, QueryResultRow } from "pg";
 import { AuthenticatedUser, RequestContext } from "../../common/types/authenticated-user";
 import { AuditService } from "../audit/audit.service";
 import { DatabaseService } from "../database/database.service";
+import { NotificationsService } from "../notifications/notifications.service";
 import { StorageService } from "../storage/storage.service";
 import {
   CommunicationAttachmentType,
@@ -67,7 +68,8 @@ export class CommunicationService {
   constructor(
     private readonly database: DatabaseService,
     private readonly storage: StorageService,
-    private readonly audit: AuditService
+    private readonly audit: AuditService,
+    @Optional() private readonly notifications?: NotificationsService
   ) {}
 
   async ensureRoomForAcceptedTask(taskId: string, client?: QueryExecutor) {
@@ -176,6 +178,15 @@ export class CommunicationService {
       context
     });
 
+    await this.notifications?.createNotification({
+      recipientUserId: this.otherParticipantUserId(room, user.id),
+      actorUserId: user.id,
+      type: "MESSAGE_RECEIVED",
+      title: "New message",
+      body: `${room.task_name} has a new message.`,
+      relatedTaskId: taskId
+    });
+
     return this.getMessageById(room.id, messageId);
   }
 
@@ -277,6 +288,15 @@ export class CommunicationService {
         sizeBytes: dto.sizeBytes
       },
       context
+    });
+
+    await this.notifications?.createNotification({
+      recipientUserId: this.otherParticipantUserId(room, user.id),
+      actorUserId: user.id,
+      type: "ATTACHMENT_RECEIVED",
+      title: "New attachment",
+      body: `${room.task_name} has a new ${dto.attachmentType.toLowerCase()} attachment placeholder.`,
+      relatedTaskId: taskId
     });
 
     return {
@@ -525,6 +545,10 @@ export class CommunicationService {
       sizeBytes: Number(record.sizeBytes),
       status: String(record.status)
     };
+  }
+
+  private otherParticipantUserId(room: CommunicationRoomRow, senderUserId: string) {
+    return senderUserId === room.customer_user_id ? room.agent_user_id : room.customer_user_id;
   }
 
   private parseJsonArray(value: unknown): Array<Record<string, unknown>> {

@@ -3,6 +3,7 @@ import { plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
 import { AuditService } from "../audit/audit.service";
 import { DatabaseService } from "../database/database.service";
+import { NotificationsService } from "../notifications/notifications.service";
 import { CreateReviewDto } from "./dto/create-review.dto";
 import { ReviewsService } from "./reviews.service";
 
@@ -83,17 +84,21 @@ function createService() {
   const audit = {
     write: jest.fn()
   };
+  const notifications = {
+    createNotification: jest.fn()
+  };
   const service = new ReviewsService(
     database as unknown as DatabaseService,
-    audit as unknown as AuditService
+    audit as unknown as AuditService,
+    notifications as unknown as NotificationsService
   );
 
-  return { audit, database, query, service };
+  return { audit, database, notifications, query, service };
 }
 
 describe("ReviewsService", () => {
   it("lets the task customer review the assigned agent after completion", async () => {
-    const { audit, query, service } = createService();
+    const { audit, notifications, query, service } = createService();
     query
       .mockResolvedValueOnce({ rows: [taskRow()] })
       .mockResolvedValueOnce({ rows: [] })
@@ -127,6 +132,15 @@ describe("ReviewsService", () => {
     ]);
     expect(audit.write).toHaveBeenCalledWith(
       expect.objectContaining({ action: "TASK_REVIEW_CREATED" })
+    );
+    expect(notifications.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientUserId: agentUser.id,
+        actorUserId: customerUser.id,
+        type: "REVIEW_RECEIVED",
+        relatedTaskId: taskId,
+        relatedReviewId: reviewId
+      })
     );
   });
 

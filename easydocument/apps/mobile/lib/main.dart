@@ -43,6 +43,7 @@ class _PhaseOneShellState extends State<PhaseOneShell> {
       const AgentKycShellScreen(),
       const CustomerTaskShellScreen(),
       const AgentTaskShellScreen(),
+      const NotificationShellScreen(),
     ];
 
     return Scaffold(
@@ -83,6 +84,11 @@ class _PhaseOneShellState extends State<PhaseOneShell> {
             icon: Icon(Icons.travel_explore_outlined),
             selectedIcon: Icon(Icons.travel_explore),
             label: 'Agent Work',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.notifications_outlined),
+            selectedIcon: Icon(Icons.notifications),
+            label: 'Alerts',
           ),
         ],
       ),
@@ -609,6 +615,113 @@ class AgentReviewsScreen extends StatelessWidget {
           text: 'Delivered on time with helpful updates.',
         ),
       ],
+    );
+  }
+}
+
+class NotificationShellScreen extends StatelessWidget {
+  const NotificationShellScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const _ShellPane(
+      title: 'Notifications',
+      description: 'Review task, message, call, dispute, verification, and review updates.',
+      children: [
+        NotificationBadgePlaceholder(),
+        SizedBox(height: 16),
+        NotificationListPlaceholder(),
+        SizedBox(height: 16),
+        _ButtonRow(
+          primaryLabel: 'Mark All Read',
+          secondaryLabel: 'Refresh',
+        ),
+      ],
+    );
+  }
+}
+
+class NotificationBadgePlaceholder extends StatelessWidget {
+  const NotificationBadgePlaceholder({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      children: [
+        Badge(
+          label: Text('3'),
+          child: Icon(Icons.notifications_active_outlined, size: 32),
+        ),
+        SizedBox(width: 16),
+        Expanded(
+          child: _ReadonlyLine(label: 'Unread', value: '3 notifications'),
+        ),
+      ],
+    );
+  }
+}
+
+class NotificationListPlaceholder extends StatelessWidget {
+  const NotificationListPlaceholder({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      children: [
+        NotificationTilePlaceholder(
+          title: 'Task accepted',
+          body: 'An agent accepted your document request.',
+          unread: true,
+        ),
+        NotificationTilePlaceholder(
+          title: 'New message',
+          body: 'Your task has a new message.',
+          unread: true,
+        ),
+        NotificationTilePlaceholder(
+          title: 'Review received',
+          body: 'A customer submitted a review.',
+          unread: false,
+        ),
+      ],
+    );
+  }
+}
+
+class NotificationTilePlaceholder extends StatelessWidget {
+  const NotificationTilePlaceholder({
+    required this.title,
+    required this.body,
+    required this.unread,
+    super.key,
+  });
+
+  final String title;
+  final String body;
+  final bool unread;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: unread
+              ? Theme.of(context).colorScheme.primaryContainer
+              : Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: ListTile(
+          leading: Icon(unread ? Icons.markunread_outlined : Icons.drafts_outlined),
+          title: Text(title),
+          subtitle: Text(body),
+          trailing: const IconButton(
+            onPressed: null,
+            tooltip: 'Mark as read placeholder',
+            icon: Icon(Icons.done_all_outlined),
+          ),
+        ),
+      ),
     );
   }
 }

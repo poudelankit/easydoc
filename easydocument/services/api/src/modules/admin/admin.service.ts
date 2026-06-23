@@ -1,8 +1,9 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException, Optional } from "@nestjs/common";
 import { PoolClient, QueryResultRow } from "pg";
 import { AuthenticatedUser, RequestContext } from "../../common/types/authenticated-user";
 import { AuditService } from "../audit/audit.service";
 import { DatabaseService } from "../database/database.service";
+import { NotificationsService } from "../notifications/notifications.service";
 import { RejectAgentDto } from "./dto/reject-agent.dto";
 
 type AgentStatus = "DRAFT" | "PENDING_VERIFICATION" | "VERIFIED" | "REJECTED" | "SUSPENDED";
@@ -114,7 +115,8 @@ interface QueryExecutor {
 export class AdminService {
   constructor(
     private readonly database: DatabaseService,
-    private readonly audit: AuditService
+    private readonly audit: AuditService,
+    @Optional() private readonly notifications?: NotificationsService
   ) {}
 
   async getDashboard() {
@@ -215,6 +217,14 @@ export class AdminService {
       context
     });
 
+    await this.notifications?.createNotification({
+      recipientUserId: updatedAgent.after.user_id,
+      actorUserId: admin.id,
+      type: "AGENT_VERIFICATION_APPROVED",
+      title: "Agent verification approved",
+      body: "Your EasyDocument agent profile has been approved."
+    });
+
     return this.mapAgent(updatedAgent.after, true);
   }
 
@@ -259,6 +269,14 @@ export class AdminService {
       beforeData: this.mapAgent(updatedAgent.before, true),
       afterData: this.mapAgent(updatedAgent.after, true),
       context
+    });
+
+    await this.notifications?.createNotification({
+      recipientUserId: updatedAgent.after.user_id,
+      actorUserId: admin.id,
+      type: "AGENT_VERIFICATION_REJECTED",
+      title: "Agent verification rejected",
+      body: `Your EasyDocument agent profile was rejected: ${reason}`
     });
 
     return this.mapAgent(updatedAgent.after, true);

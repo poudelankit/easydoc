@@ -6,6 +6,7 @@ import type {
   AdminDashboardResponse,
   AdminDisputeDetail,
   AdminDisputeSummary,
+  AdminNotificationSummaryResponse,
   AdminReviewSummary,
   AdminTaskDetail,
   AdminTaskSummary,
@@ -137,6 +138,10 @@ export function getDispute(token: string, disputeId: string) {
 
 export function getAdminReviews(token: string) {
   return apiRequest<AdminReviewSummary[]>("/admin/reviews", { token });
+}
+
+export function getAdminNotificationSummary(token: string) {
+  return apiRequest<AdminNotificationSummaryResponse>("/admin/notifications/summary", { token });
 }
 
 export function addMediationNote(token: string, disputeId: string, note: string) {

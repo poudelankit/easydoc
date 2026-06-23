@@ -3,12 +3,14 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
-  NotFoundException
+  NotFoundException,
+  Optional
 } from "@nestjs/common";
 import { QueryResultRow } from "pg";
 import { AuthenticatedUser, RequestContext } from "../../common/types/authenticated-user";
 import { AuditService } from "../audit/audit.service";
 import { DatabaseService } from "../database/database.service";
+import { NotificationsService } from "../notifications/notifications.service";
 import { CreateReviewDto } from "./dto/create-review.dto";
 
 type TaskStatus =
@@ -79,7 +81,8 @@ interface ReputationMetricsRow extends QueryResultRow {
 export class ReviewsService {
   constructor(
     private readonly database: DatabaseService,
-    private readonly audit: AuditService
+    private readonly audit: AuditService,
+    @Optional() private readonly notifications?: NotificationsService
   ) {}
 
   async createTaskReview(
@@ -92,7 +95,7 @@ export class ReviewsService {
       throw new ForbiddenException("Only customers can review completed tasks");
     }
 
-    const reviewId = await this.database.transaction(async (client) => {
+    const reviewResult = await this.database.transaction(async (client) => {
       const task = await this.loadReviewableTask(client, taskId, true);
       this.assertTaskCanBeReviewed(task, user);
 
@@ -136,14 +139,17 @@ export class ReviewsService {
       if (!review) {
         throw new BadRequestException("Review could not be submitted");
       }
-      return review.id;
+      return {
+        id: review.id,
+        agentUserId: task.assigned_agent_user_id
+      };
     });
 
     await this.audit.write({
       actorUserId: user.id,
       action: "TASK_REVIEW_CREATED",
       entityType: "task_reviews",
-      entityId: reviewId,
+      entityId: reviewResult.id,
       afterData: {
         taskId,
         overallRating: dto.overallRating,
@@ -154,7 +160,19 @@ export class ReviewsService {
       context
     });
 
-    return this.getReviewById(reviewId);
+    if (reviewResult.agentUserId) {
+      await this.notifications?.createNotification({
+        recipientUserId: reviewResult.agentUserId,
+        actorUserId: user.id,
+        type: "REVIEW_RECEIVED",
+        title: "New review received",
+        body: `You received a ${dto.overallRating}-star review.`,
+        relatedTaskId: taskId,
+        relatedReviewId: reviewResult.id
+      });
+    }
+
+    return this.getReviewById(reviewResult.id);
   }
 
   async listCustomerReviews(user: AuthenticatedUser) {

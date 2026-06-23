@@ -3,6 +3,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  Optional,
   UnauthorizedException
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
@@ -15,6 +16,7 @@ import { ttlToDate } from "../../common/utils/ttl.util";
 import { RequestContext, UserRole } from "../../common/types/authenticated-user";
 import { AuditService } from "../audit/audit.service";
 import { DatabaseService } from "../database/database.service";
+import { NotificationsService } from "../notifications/notifications.service";
 import { RedisService } from "../redis/redis.service";
 import { SendOtpDto } from "./dto/send-otp.dto";
 import { VerifyOtpDto } from "./dto/verify-otp.dto";
@@ -44,7 +46,8 @@ export class AuthService {
     private readonly database: DatabaseService,
     private readonly redis: RedisService,
     private readonly jwt: JwtService,
-    private readonly audit: AuditService
+    private readonly audit: AuditService,
+    @Optional() private readonly notifications?: NotificationsService
   ) {}
 
   async sendOtp(dto: SendOtpDto, context: RequestContext) {
@@ -70,6 +73,12 @@ export class AuthService {
       entityType: "otp_verifications",
       afterData: { phoneNumber, purpose: dto.purpose },
       context
+    });
+
+    await this.notifications?.createForExistingPhoneNumber(phoneNumber, {
+      type: "OTP_SENT",
+      title: "OTP sent",
+      body: "A verification code was sent to your phone."
     });
 
     return {

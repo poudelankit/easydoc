@@ -11,5 +11,6 @@ void main() {
     expect(find.text('Agent'), findsOneWidget);
     expect(find.text('Tasks'), findsOneWidget);
     expect(find.text('Agent Work'), findsOneWidget);
+    expect(find.text('Alerts'), findsOneWidget);
   });
 }

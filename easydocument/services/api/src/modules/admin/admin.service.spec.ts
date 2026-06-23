@@ -2,6 +2,7 @@ import { BadRequestException } from "@nestjs/common";
 import { ROLES_KEY } from "../../common/decorators/roles.decorator";
 import { AuditService } from "../audit/audit.service";
 import { DatabaseService } from "../database/database.service";
+import { NotificationsService } from "../notifications/notifications.service";
 import { AdminController } from "./admin.controller";
 import { AdminService } from "./admin.service";
 
@@ -87,12 +88,16 @@ function createService() {
   const audit = {
     write: jest.fn()
   };
+  const notifications = {
+    createNotification: jest.fn()
+  };
   const service = new AdminService(
     database as unknown as DatabaseService,
-    audit as unknown as AuditService
+    audit as unknown as AuditService,
+    notifications as unknown as NotificationsService
   );
 
-  return { audit, database, query, service };
+  return { audit, database, notifications, query, service };
 }
 
 describe("AdminService", () => {
@@ -101,7 +106,7 @@ describe("AdminService", () => {
   });
 
   it("approves an agent and stores admin verification metadata", async () => {
-    const { audit, query, service } = createService();
+    const { audit, notifications, query, service } = createService();
     query
       .mockResolvedValueOnce({ rows: [{ id: agentId }] })
       .mockResolvedValueOnce({ rows: [agentRow()] })
@@ -127,10 +132,17 @@ describe("AdminService", () => {
     expect(audit.write).toHaveBeenCalledWith(
       expect.objectContaining({ action: "AGENT_VERIFICATION_APPROVED" })
     );
+    expect(notifications.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientUserId: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+        actorUserId: adminUser.id,
+        type: "AGENT_VERIFICATION_APPROVED"
+      })
+    );
   });
 
   it("rejects an agent and stores reason plus admin actor", async () => {
-    const { audit, query, service } = createService();
+    const { audit, notifications, query, service } = createService();
     query
       .mockResolvedValueOnce({ rows: [{ id: agentId }] })
       .mockResolvedValueOnce({ rows: [agentRow()] })
@@ -164,6 +176,13 @@ describe("AdminService", () => {
     ]);
     expect(audit.write).toHaveBeenCalledWith(
       expect.objectContaining({ action: "AGENT_VERIFICATION_REJECTED" })
+    );
+    expect(notifications.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientUserId: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+        actorUserId: adminUser.id,
+        type: "AGENT_VERIFICATION_REJECTED"
+      })
     );
   });
 

@@ -1,6 +1,7 @@
 import { ConflictException, ForbiddenException } from "@nestjs/common";
 import { AuditService } from "../audit/audit.service";
 import { DatabaseService } from "../database/database.service";
+import { NotificationsService } from "../notifications/notifications.service";
 import { CallsService } from "./calls.service";
 
 const taskId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
@@ -86,17 +87,21 @@ function createService() {
   const audit = {
     write: jest.fn()
   };
+  const notifications = {
+    createNotification: jest.fn()
+  };
   const service = new CallsService(
     database as unknown as DatabaseService,
-    audit as unknown as AuditService
+    audit as unknown as AuditService,
+    notifications as unknown as NotificationsService
   );
 
-  return { audit, database, query, service };
+  return { audit, database, notifications, query, service };
 }
 
 describe("CallsService", () => {
   it("creates a ringing audio call session with status history", async () => {
-    const { audit, query, service } = createService();
+    const { audit, notifications, query, service } = createService();
     query
       .mockResolvedValueOnce({ rows: [authorizedTaskRow()] })
       .mockResolvedValueOnce({ rows: [{ id: callId }] })
@@ -122,6 +127,14 @@ describe("CallsService", () => {
     expect(query.mock.calls[5][0]).toContain("$5::call_status");
     expect(audit.write).toHaveBeenCalledWith(
       expect.objectContaining({ action: "CALL_SESSION_REQUESTED" })
+    );
+    expect(notifications.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientUserId: agentUser.id,
+        actorUserId: customerUser.id,
+        type: "CALL_REQUESTED",
+        relatedTaskId: taskId
+      })
     );
   });
 

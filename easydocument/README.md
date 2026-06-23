@@ -2,7 +2,7 @@
 
 EasyDocument is a Nepal-only document services marketplace connecting customers with verified local agents for document retrieval, submission, verification, and office follow-up work.
 
-This repository is the EasyDocument Enterprise Implementation Package monorepo. It currently contains the Phase 8 foundation for authentication, profiles, agent onboarding, task creation, nearby task discovery, task acceptance, accepted-task communication, post-acceptance task lifecycle tracking, in-app call signaling, admin operational management, dispute mediation, reviews, ratings, and agent reputation.
+This repository is the EasyDocument Enterprise Implementation Package monorepo. It currently contains the Phase 9 foundation for authentication, profiles, agent onboarding, task creation, nearby task discovery, task acceptance, accepted-task communication, post-acceptance task lifecycle tracking, in-app call signaling, admin operational management, dispute mediation, reviews, ratings, agent reputation, and stored in-app notifications.
 
 ## Monorepo Layout
 
@@ -42,7 +42,7 @@ easydocument/
 
 The following are intentionally not implemented yet:
 
-- Full notification system.
+- Real SMS, push, and email notification delivery.
 - Payments.
 - Analytics.
 - Refunds.
@@ -71,7 +71,7 @@ Stop local infrastructure:
 
 ## Current Phase
 
-Phase 8 includes the Phase 1 authentication/profile foundation, Phase 2 task creation and acceptance flow, Phase 3 task communication, Phase 4 lifecycle tracking, Phase 5 call signaling metadata, Phase 6 admin operations, Phase 7 dispute mediation, plus completed-task reviews and query-calculated agent reputation.
+Phase 9 includes the Phase 1 authentication/profile foundation, Phase 2 task creation and acceptance flow, Phase 3 task communication, Phase 4 lifecycle tracking, Phase 5 call signaling metadata, Phase 6 admin operations, Phase 7 dispute mediation, Phase 8 reviews/reputation, plus stored in-app notifications with read/unread support.
 
 ## Local Run Commands
 

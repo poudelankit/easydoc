@@ -6,6 +6,7 @@ import { AuthModule } from "./modules/auth/auth.module";
 import { CustomersModule } from "./modules/customers/customers.module";
 import { DatabaseModule } from "./modules/database/database.module";
 import { HealthModule } from "./modules/health/health.module";
+import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { RedisModule } from "./modules/redis/redis.module";
 import { ReviewsModule } from "./modules/reviews/reviews.module";
 import { StorageModule } from "./modules/storage/storage.module";
@@ -22,6 +23,7 @@ import { TasksModule } from "./modules/tasks/tasks.module";
     RedisModule,
     StorageModule,
     AuditModule,
+    NotificationsModule,
     AuthModule,
     UsersModule,
     CommunicationModule,

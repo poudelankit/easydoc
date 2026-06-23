@@ -1,6 +1,7 @@
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { AuditService } from "../audit/audit.service";
 import { DatabaseService } from "../database/database.service";
+import { NotificationsService } from "../notifications/notifications.service";
 import { StorageService } from "../storage/storage.service";
 import { CommunicationService } from "./communication.service";
 
@@ -91,14 +92,18 @@ function createService() {
   const audit = {
     write: jest.fn()
   };
+  const notifications = {
+    createNotification: jest.fn()
+  };
 
   const service = new CommunicationService(
     database as unknown as DatabaseService,
     storage as unknown as StorageService,
-    audit as unknown as AuditService
+    audit as unknown as AuditService,
+    notifications as unknown as NotificationsService
   );
 
-  return { audit, database, query, service, storage };
+  return { audit, database, notifications, query, service, storage };
 }
 
 describe("CommunicationService", () => {
@@ -140,7 +145,7 @@ describe("CommunicationService", () => {
   });
 
   it("stores a text message and optional room attachment links", async () => {
-    const { audit, query, service } = createService();
+    const { audit, notifications, query, service } = createService();
     query
       .mockResolvedValueOnce({ rows: [roomRow()] })
       .mockResolvedValueOnce({ rows: [{ id: "cccccccc-cccc-cccc-cccc-cccccccccccc" }] })
@@ -183,6 +188,14 @@ describe("CommunicationService", () => {
     expect(audit.write).toHaveBeenCalledWith(
       expect.objectContaining({ action: "CHAT_MESSAGE_CREATED" })
     );
+    expect(notifications.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientUserId: agentUser.id,
+        actorUserId: customerUser.id,
+        type: "MESSAGE_RECEIVED",
+        relatedTaskId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+      })
+    );
   });
 
   it("blocks unrelated users from a room", async () => {
@@ -211,7 +224,7 @@ describe("CommunicationService", () => {
   });
 
   it("creates attachment metadata with a MinIO placeholder object key", async () => {
-    const { audit, query, service, storage } = createService();
+    const { audit, notifications, query, service, storage } = createService();
     query
       .mockResolvedValueOnce({ rows: [roomRow()] })
       .mockResolvedValueOnce({
@@ -261,6 +274,14 @@ describe("CommunicationService", () => {
     );
     expect(audit.write).toHaveBeenCalledWith(
       expect.objectContaining({ action: "CHAT_ATTACHMENT_PLACEHOLDER_CREATED" })
+    );
+    expect(notifications.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientUserId: agentUser.id,
+        actorUserId: customerUser.id,
+        type: "ATTACHMENT_RECEIVED",
+        relatedTaskId: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+      })
     );
   });
 

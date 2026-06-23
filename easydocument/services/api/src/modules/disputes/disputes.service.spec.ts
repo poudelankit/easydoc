@@ -1,6 +1,7 @@
 import { ConflictException, ForbiddenException } from "@nestjs/common";
 import { AuditService } from "../audit/audit.service";
 import { DatabaseService } from "../database/database.service";
+import { NotificationsService } from "../notifications/notifications.service";
 import { DisputesService } from "./disputes.service";
 
 const taskId = "11111111-1111-1111-1111-111111111111";
@@ -82,21 +83,28 @@ function createService() {
   const audit = {
     write: jest.fn()
   };
+  const notifications = {
+    createNotification: jest.fn(),
+    createForAdmins: jest.fn(),
+    createMany: jest.fn()
+  };
   const service = new DisputesService(
     database as unknown as DatabaseService,
-    audit as unknown as AuditService
+    audit as unknown as AuditService,
+    notifications as unknown as NotificationsService
   );
 
-  return { audit, database, query, service };
+  return { audit, database, notifications, query, service };
 }
 
 describe("DisputesService", () => {
   it("lets the task customer open a dispute for an assigned active task", async () => {
-    const { audit, query, service } = createService();
+    const { audit, notifications, query, service } = createService();
     query
       .mockResolvedValueOnce({ rows: [taskRow()] })
       .mockResolvedValueOnce({ rows: [{ id: disputeId }] })
       .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [disputeRow()] })
       .mockResolvedValueOnce({ rows: [disputeRow()] });
 
     const dispute = await service.createTaskDispute(
@@ -123,6 +131,22 @@ describe("DisputesService", () => {
     ]);
     expect(audit.write).toHaveBeenCalledWith(
       expect.objectContaining({ action: "TASK_DISPUTE_OPENED" })
+    );
+    expect(notifications.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientUserId: agentUser.id,
+        actorUserId: customerUser.id,
+        type: "DISPUTE_OPENED",
+        relatedTaskId: taskId,
+        relatedDisputeId: disputeId
+      })
+    );
+    expect(notifications.createForAdmins).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: customerUser.id,
+        type: "DISPUTE_OPENED",
+        relatedDisputeId: disputeId
+      })
     );
   });
 
@@ -203,11 +227,12 @@ describe("DisputesService", () => {
   });
 
   it("updates dispute status and writes history", async () => {
-    const { audit, query, service } = createService();
+    const { audit, notifications, query, service } = createService();
     query
       .mockResolvedValueOnce({ rows: [disputeRow()] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [disputeRow({ status: "UNDER_REVIEW" })] })
       .mockResolvedValueOnce({ rows: [disputeRow({ status: "UNDER_REVIEW" })] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
@@ -234,6 +259,22 @@ describe("DisputesService", () => {
     expect(audit.write).toHaveBeenCalledWith(
       expect.objectContaining({ action: "DISPUTE_STATUS_UPDATED" })
     );
+    expect(notifications.createMany).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({
+          recipientUserId: customerUser.id,
+          actorUserId: adminUser.id,
+          type: "DISPUTE_STATUS_UPDATED",
+          relatedDisputeId: disputeId
+        }),
+        expect.objectContaining({
+          recipientUserId: agentUser.id,
+          actorUserId: adminUser.id,
+          type: "DISPUTE_STATUS_UPDATED",
+          relatedDisputeId: disputeId
+        })
+      ])
+    );
   });
 
   it("resolves a dispute with a participant-visible summary", async () => {
@@ -242,6 +283,9 @@ describe("DisputesService", () => {
       .mockResolvedValueOnce({ rows: [disputeRow({ status: "UNDER_REVIEW" })] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [disputeRow({ status: "RESOLVED", resolution_summary: "Agent will revisit tomorrow." })]
+      })
       .mockResolvedValueOnce({
         rows: [disputeRow({ status: "RESOLVED", resolution_summary: "Agent will revisit tomorrow." })]
       })

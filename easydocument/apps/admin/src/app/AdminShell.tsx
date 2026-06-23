@@ -29,6 +29,7 @@ import type {
   AdminDashboardResponse,
   AdminDisputeDetail,
   AdminDisputeSummary,
+  AdminNotificationSummaryResponse,
   AdminReviewSummary,
   AdminTaskDetail,
   AdminTaskSummary,
@@ -52,6 +53,7 @@ import {
   addMediationNote,
   approveAgent,
   clearStoredSession,
+  getAdminNotificationSummary,
   getAdminReviews,
   getAgent,
   getCommunicationAudit,
@@ -121,6 +123,7 @@ export function AdminShell() {
               <Route path="/disputes" element={<DisputeList token={session.accessToken} />} />
               <Route path="/disputes/:disputeId" element={<DisputeDetail token={session.accessToken} />} />
               <Route path="/reviews" element={<ReviewMonitoring token={session.accessToken} />} />
+              <Route path="/notifications" element={<NotificationSummary token={session.accessToken} />} />
             </Routes>
           </Box>
         </Container>
@@ -647,6 +650,63 @@ function ReviewMonitoring({ token }: { token: string }) {
         <Button onClick={reload}>Refresh</Button>
       </Stack>
       <ReviewTable reviews={data} />
+    </Stack>
+  );
+}
+
+function NotificationSummary({ token }: { token: string }) {
+  const { data, error, loading, reload } = useResource(
+    () => getAdminNotificationSummary(token),
+    [token]
+  );
+
+  if (loading) {
+    return <LoadingPanel title="Notifications" />;
+  }
+  if (error || !data) {
+    return <ErrorPanel title="Notifications" error={error} />;
+  }
+
+  return (
+    <Stack spacing={3}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between">
+        <Typography variant="h5" component="h2">
+          Notifications
+        </Typography>
+        <Button onClick={reload}>Refresh</Button>
+      </Stack>
+      <NotificationSummaryPanel summary={data} />
+    </Stack>
+  );
+}
+
+function NotificationSummaryPanel({ summary }: { summary: AdminNotificationSummaryResponse }) {
+  return (
+    <Stack spacing={2}>
+      <Box display="grid" gap={2} gridTemplateColumns={{ xs: "1fr", md: "repeat(2, 1fr)" }}>
+        <MetricCard label="Admin notifications" value={summary.totalNotifications} />
+        <MetricCard label="Unread admin notifications" value={summary.unreadNotifications} />
+      </Box>
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Typography variant="h6">By Type</Typography>
+        <Stack direction="row" gap={1} flexWrap="wrap" mt={2}>
+          {summary.byType.map((item) => (
+            <Chip
+              key={item.type}
+              label={`${item.type}: ${item.count} (${item.unreadCount} unread)`}
+              variant="outlined"
+            />
+          ))}
+        </Stack>
+      </Paper>
+      <Paper variant="outlined" sx={{ p: 2 }}>
+        <Typography variant="h6">By Channel</Typography>
+        <Stack direction="row" gap={1} flexWrap="wrap" mt={2}>
+          {summary.byChannel.map((item) => (
+            <Chip key={item.deliveryChannel} label={`${item.deliveryChannel}: ${item.count}`} />
+          ))}
+        </Stack>
+      </Paper>
     </Stack>
   );
 }

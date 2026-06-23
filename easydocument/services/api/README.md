@@ -15,10 +15,11 @@ Node.js + NestJS backend API for EasyDocument.
 - Admin operational management.
 - Dispute and admin mediation workflow.
 - Reviews, ratings, and query-calculated agent reputation.
+- Stored in-app notifications with SMS and push placeholder channels.
 
 ## Current State
 
-This folder contains the Phase 8 NestJS API foundation for auth, profiles, task creation, nearby task discovery, task acceptance, accepted-task communication, task lifecycle tracking, in-app call signaling metadata, admin operational management, dispute mediation, reviews, ratings, and agent reputation.
+This folder contains the Phase 9 NestJS API foundation for auth, profiles, task creation, nearby task discovery, task acceptance, accepted-task communication, task lifecycle tracking, in-app call signaling metadata, admin operational management, dispute mediation, reviews, ratings, agent reputation, and stored in-app notifications.
 
 ## Implemented Endpoints
 
@@ -63,6 +64,10 @@ This folder contains the Phase 8 NestJS API foundation for auth, profiles, task 
 - `GET /v1/agents/me/reviews`
 - `GET /v1/agents/:agentId/reviews`
 - `GET /v1/agents/:agentId/reputation`
+- `GET /v1/notifications`
+- `GET /v1/notifications/unread-count`
+- `POST /v1/notifications/:notificationId/read`
+- `POST /v1/notifications/read-all`
 - `GET /v1/admin/me`
 - `GET /v1/admin/dashboard`
 - `GET /v1/admin/agents/pending`
@@ -79,12 +84,15 @@ This folder contains the Phase 8 NestJS API foundation for auth, profiles, task 
 - `POST /v1/admin/disputes/:disputeId/status`
 - `POST /v1/admin/disputes/:disputeId/resolve`
 - `GET /v1/admin/reviews`
+- `GET /v1/admin/notifications/summary`
 
-## Phase 8 Notes
+## Phase 9 Notes
 
 - Customers can submit one review per completed task.
 - Review edit windows are not implemented in Phase 8 and remain a future enhancement.
 - Reputation metrics are query-calculated from completed tasks and `task_reviews`.
+- Notifications are stored in PostgreSQL and delivered through the `IN_APP` channel.
+- `SMS_PLACEHOLDER` and `PUSH_PLACEHOLDER` are schema-supported channels only; real providers are not implemented in Phase 9.
 
 ## Socket.IO Events
 

@@ -14,11 +14,12 @@ Flutter application for EasyDocument customers and agents.
 - Audio, video, incoming call, active call, and external phone call placeholders with `tel:` URI launch support.
 - Dispute opening, dispute status, and resolution summary placeholders.
 - Leave review, rating selector, review text, and agent reviews placeholders.
-- Future production chat/call/dispute/review client integration.
+- Notification list, unread badge/count, and mark-as-read placeholders.
+- Future production chat/call/dispute/review/notification client integration.
 
 ## Current State
 
-This folder contains the Phase 8 Flutter shell for OTP, customer profile, agent KYC onboarding, customer task placeholders, agent task placeholders, task chat placeholders, task lifecycle placeholders, task call placeholders, task dispute placeholders, and review/reputation placeholders. API integration will be wired after the backend contracts stabilize.
+This folder contains the Phase 9 Flutter shell for OTP, customer profile, agent KYC onboarding, customer task placeholders, agent task placeholders, task chat placeholders, task lifecycle placeholders, task call placeholders, task dispute placeholders, review/reputation placeholders, and notification placeholders. API integration will be wired after the backend contracts stabilize.
 
 ## Local Setup
 
