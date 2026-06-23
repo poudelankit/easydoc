@@ -8,6 +8,7 @@ const PLACEHOLDER_VALUES = new Set([
   "replace-with-sms-provider-key",
   "replace-with-firebase-service-account-json",
   "replace-with-google-maps-key",
+  "https://sms-provider.example/send",
   "minioadmin",
   "minioadmin123",
   "easydoc_dev_password"
@@ -91,6 +92,7 @@ export function validateRuntimeEnvironment(): RuntimeEnvironmentValidation {
     requirePresent("MINIO_BUCKET_EXPORTS", errors);
     requirePresent("SMS_PROVIDER", errors);
     requirePresent("PUSH_PROVIDER", errors);
+    requirePresent("SMS_PROVIDER_ENDPOINT", errors);
     requirePresent("SMS_PROVIDER_API_KEY", errors);
     requirePresent("SMS_PROVIDER_SENDER_ID", errors);
     requirePresent("FIREBASE_PROJECT_ID", errors);
@@ -100,6 +102,7 @@ export function validateRuntimeEnvironment(): RuntimeEnvironmentValidation {
     requireNonPlaceholder("MINIO_SECRET_KEY", errors);
     requireNonPlaceholder("SMS_PROVIDER", errors);
     requireNonPlaceholder("PUSH_PROVIDER", errors);
+    requireNonPlaceholder("SMS_PROVIDER_ENDPOINT", errors);
     requireNonPlaceholder("SMS_PROVIDER_API_KEY", errors);
     requireNonPlaceholder("SMS_PROVIDER_SENDER_ID", errors);
     requireNonPlaceholder("FIREBASE_PROJECT_ID", errors);
@@ -110,12 +113,19 @@ export function validateRuntimeEnvironment(): RuntimeEnvironmentValidation {
     if (process.env.FIREBASE_SERVICE_ACCOUNT_SECRET_NAME?.trim()) {
       requireNonPlaceholder("FIREBASE_SERVICE_ACCOUNT_SECRET_NAME", errors);
     }
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH?.trim()) {
+      requireNonPlaceholder("FIREBASE_SERVICE_ACCOUNT_PATH", errors);
+    }
 
     if (process.env.SMS_PROVIDER === "local-mock") {
       errors.push("SMS_PROVIDER must not be local-mock outside local development.");
     }
-    if (!process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim() && !process.env.FIREBASE_SERVICE_ACCOUNT_SECRET_NAME?.trim()) {
-      errors.push("Firebase service account secret reference is required outside local development.");
+    if (
+      !process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim() &&
+      !process.env.FIREBASE_SERVICE_ACCOUNT_SECRET_NAME?.trim() &&
+      !process.env.FIREBASE_SERVICE_ACCOUNT_PATH?.trim()
+    ) {
+      errors.push("Firebase service account JSON, mounted path, or secret reference is required outside local development.");
     }
     if (process.env.PUSH_PROVIDER !== "firebase") {
       errors.push("PUSH_PROVIDER must be firebase outside local development.");

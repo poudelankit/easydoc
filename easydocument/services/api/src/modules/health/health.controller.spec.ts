@@ -58,4 +58,15 @@ describe("HealthController", () => {
       }
     });
   });
+
+  it("rejects provider readiness when delivery provider config is incomplete", () => {
+    const { controller, sms } = createController();
+    sms.getProviderStatus.mockReturnValue({
+      mode: "staging-real-provider",
+      providerName: "real-sms-provider",
+      configured: false
+    });
+
+    expect(() => controller.otpProviderHealth()).toThrow(ServiceUnavailableException);
+  });
 });

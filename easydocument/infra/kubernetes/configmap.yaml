@@ -14,6 +14,8 @@ data:
   JWT_ACCESS_TTL: "15m"
   JWT_REFRESH_TTL: "30d"
   SMS_PROVIDER: "real-sms-provider"
+  SMS_PROVIDER_TIMEOUT_MS: "5000"
   PUSH_PROVIDER: "firebase"
+  FIREBASE_TIMEOUT_MS: "5000"
   VITE_API_BASE_URL: "https://api.easydocument.example/v1"
   VITE_SOCKET_URL: "https://api.easydocument.example"

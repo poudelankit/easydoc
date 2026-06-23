@@ -97,8 +97,16 @@ export interface AdminNotificationSummaryResponse {
   }>;
 }
 
-export type SmsProviderMode = "local-mock" | "provider-placeholder";
-export type PushProviderMode = "placeholder" | "firebase-placeholder";
+export type SmsProviderMode =
+  | "local-mock"
+  | "provider-placeholder"
+  | "staging-real-provider"
+  | "production-real-provider";
+export type PushProviderMode =
+  | "placeholder"
+  | "firebase-placeholder"
+  | "staging-real-provider"
+  | "production-real-provider";
 
 export interface ProviderHealthResponse {
   status: "ready" | "not_ready";

@@ -16,13 +16,14 @@ Do not commit real secrets. The repository contains only names, placeholders, an
 - `MOBILE_API_URL`: mobile app API base URL.
 - `SOCKET_URL`: Socket.IO base URL.
 - `SMS_PROVIDER`: production SMS provider name.
+- `SMS_PROVIDER_ENDPOINT`: SMS provider API endpoint.
 - `SMS_PROVIDER_API_KEY`: SMS provider API key.
 - `SMS_PROVIDER_SENDER_ID`: approved SMS sender ID.
-- `SMS_PROVIDER_ENDPOINT`: SMS provider endpoint when required.
 - `PUSH_PROVIDER`: `firebase` outside local development.
 - `FIREBASE_PROJECT_ID`: Firebase project ID.
 - `FIREBASE_SERVICE_ACCOUNT_SECRET_NAME`: secret-manager reference for Firebase service account.
 - `FIREBASE_SERVICE_ACCOUNT_JSON`: optional injected JSON from the secret manager.
+- `FIREBASE_SERVICE_ACCOUNT_PATH`: optional mounted service-account JSON path.
 - `GOOGLE_MAPS_API_KEY`: restricted Google Maps API key.
 
 The backend currently also supports purpose-specific object buckets: `MINIO_BUCKET_KYC`, `MINIO_BUCKET_CHAT`, and `MINIO_BUCKET_EXPORTS`. In production, derive these from the same storage account or map them explicitly in the secret manager.
@@ -40,6 +41,7 @@ The manual deployment workflow reads `ADMIN_API_URL` for optional smoke testing.
 `infra/kubernetes/external-secrets.example.yaml` is a placeholder for External Secrets Operator. Adapt the provider block to AWS Secrets Manager, GCP Secret Manager, Azure Key Vault, Vault, or your chosen manager.
 
 See `docs/launch-credentials.md` for the complete launch credential checklist.
+See `docs/provider-activation-runbook.md` for staging real-provider activation and rollback rehearsal.
 
 ## Rotation Notes
 

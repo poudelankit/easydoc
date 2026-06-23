@@ -7,6 +7,7 @@ This runbook prepares a real production deployment without automatic cluster dep
 - Phase 12 validation passes.
 - Launch credentials are created in the production secret manager.
 - Staging release drill passed with the same image SHA.
+- Provider activation drill passed and provider modes match production expectations.
 - Rollback rehearsal completed.
 - Migration rollback policy reviewed.
 
@@ -27,6 +28,8 @@ This runbook prepares a real production deployment without automatic cluster dep
 API_BASE_URL=https://api.easydocument.example \
 EXPECT_SMS_PROVIDER=real-sms-provider \
 EXPECT_PUSH_PROVIDER=firebase \
+EXPECT_SMS_PROVIDER_MODE=production-real-provider \
+EXPECT_PUSH_PROVIDER_MODE=production-real-provider \
 ./scripts/deployment-smoke-test.sh
 ```
 
@@ -37,4 +40,3 @@ Do not enable `RUN_MOCK_OTP_FLOW` in production.
 Rollback if readiness fails, critical login/task flows fail, data integrity is at risk, or incident lead decides launch risk is too high.
 
 Follow `docs/production-rollback-rehearsal.md`.
-

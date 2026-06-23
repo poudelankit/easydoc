@@ -17,9 +17,11 @@ Monitor these signals for at least the first 60 minutes after production cutover
 
 - `/health/otp-provider`
 - `/health/push-provider`
+- OTP provider mode matches `production-real-provider`.
+- Push provider mode matches `production-real-provider`.
 - OTP send rate and rejection rate
 - SMS provider error logs
-- Push provider placeholder logs until real Firebase sending is enabled
+- Push provider skipped sends until device-token registration is enabled
 
 ## Data Stores
 
@@ -42,4 +44,3 @@ Monitor these signals for at least the first 60 minutes after production cutover
 - Rate-limit spikes.
 - Repeated unauthorized admin access.
 - Notification creation failures.
-

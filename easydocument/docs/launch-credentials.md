@@ -18,11 +18,12 @@ Create these credentials in the staging and production secret manager before lau
 ## SMS Provider
 
 - `SMS_PROVIDER`: provider name, not `local-mock`.
+- `SMS_PROVIDER_ENDPOINT`: provider API endpoint.
 - `SMS_PROVIDER_API_KEY`: provider API key.
 - `SMS_PROVIDER_SENDER_ID`: approved sender ID.
-- `SMS_PROVIDER_ENDPOINT`: provider API endpoint when required.
+- `SMS_PROVIDER_TIMEOUT_MS`: optional send timeout, default `5000`.
 
-The code has a provider placeholder adapter. Real provider credentials must be injected by the secret manager, not committed.
+Local development uses `local-mock`. Staging and production use the HTTP SMS adapter with health modes `staging-real-provider` and `production-real-provider`.
 
 ## Firebase Push
 
@@ -30,8 +31,12 @@ The code has a provider placeholder adapter. Real provider credentials must be i
 - `FIREBASE_PROJECT_ID`: Firebase project ID.
 - `FIREBASE_SERVICE_ACCOUNT_SECRET_NAME`: secret-manager path or reference.
 - `FIREBASE_SERVICE_ACCOUNT_JSON`: optional injected JSON value from the secret manager.
+- `FIREBASE_SERVICE_ACCOUNT_PATH`: optional mounted credential file path.
+- `FIREBASE_TIMEOUT_MS`: optional Firebase request timeout, default `5000`.
 
 Do not commit the Firebase service account JSON file or JSON content.
+
+See `docs/provider-activation-runbook.md` for staging and production provider activation checks.
 
 ## Maps And Clients
 
@@ -48,4 +53,3 @@ Use separate GitHub Environments:
 - `production`: unprefixed production secrets.
 
 Require reviewers for production.
-

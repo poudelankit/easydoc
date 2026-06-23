@@ -61,11 +61,13 @@ jobs:
           MINIO_BUCKET_CHAT: ${{ secrets.MINIO_BUCKET_CHAT }}
           MINIO_BUCKET_EXPORTS: ${{ secrets.MINIO_BUCKET_EXPORTS }}
           SMS_PROVIDER: ${{ secrets.SMS_PROVIDER }}
+          SMS_PROVIDER_ENDPOINT: ${{ secrets.SMS_PROVIDER_ENDPOINT }}
           SMS_PROVIDER_API_KEY: ${{ secrets.SMS_PROVIDER_API_KEY }}
           SMS_PROVIDER_SENDER_ID: ${{ secrets.SMS_PROVIDER_SENDER_ID }}
           PUSH_PROVIDER: ${{ secrets.PUSH_PROVIDER }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           FIREBASE_SERVICE_ACCOUNT_SECRET_NAME: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SECRET_NAME }}
+          FIREBASE_SERVICE_ACCOUNT_PATH: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PATH }}
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: ./scripts/verify-production-config.sh
       - name: Print deployment checklist
@@ -80,6 +82,8 @@ jobs:
           API_BASE_URL: ${{ secrets.ADMIN_API_URL }}
           EXPECT_SMS_PROVIDER: ${{ secrets.SMS_PROVIDER }}
           EXPECT_PUSH_PROVIDER: ${{ secrets.PUSH_PROVIDER }}
+          EXPECT_SMS_PROVIDER_MODE: production-real-provider
+          EXPECT_PUSH_PROVIDER_MODE: production-real-provider
         run: |
           if [ -z "$API_BASE_URL" ]; then
             echo "ADMIN_API_URL secret not configured; skipping smoke test."

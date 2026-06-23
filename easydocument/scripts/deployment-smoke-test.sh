@@ -5,6 +5,8 @@ API_BASE_URL="${API_BASE_URL:-http://localhost:3000}"
 RUN_MOCK_OTP_FLOW="${RUN_MOCK_OTP_FLOW:-false}"
 EXPECT_SMS_PROVIDER="${EXPECT_SMS_PROVIDER:-}"
 EXPECT_PUSH_PROVIDER="${EXPECT_PUSH_PROVIDER:-}"
+EXPECT_SMS_PROVIDER_MODE="${EXPECT_SMS_PROVIDER_MODE:-}"
+EXPECT_PUSH_PROVIDER_MODE="${EXPECT_PUSH_PROVIDER_MODE:-}"
 SMOKE_TEST_PHONE="${SMOKE_TEST_PHONE:-98$(date +%s | tail -c 9)}"
 
 API_BASE_URL="${API_BASE_URL%/}"
@@ -81,8 +83,16 @@ if [[ -n "$EXPECT_SMS_PROVIDER" ]]; then
   expect_body_contains GET /health/otp-provider "\"providerName\":\"$EXPECT_SMS_PROVIDER\""
 fi
 
+if [[ -n "$EXPECT_SMS_PROVIDER_MODE" ]]; then
+  expect_body_contains GET /health/otp-provider "\"mode\":\"$EXPECT_SMS_PROVIDER_MODE\""
+fi
+
 if [[ -n "$EXPECT_PUSH_PROVIDER" ]]; then
   expect_body_contains GET /health/push-provider "\"providerName\":\"$EXPECT_PUSH_PROVIDER\""
+fi
+
+if [[ -n "$EXPECT_PUSH_PROVIDER_MODE" ]]; then
+  expect_body_contains GET /health/push-provider "\"mode\":\"$EXPECT_PUSH_PROVIDER_MODE\""
 fi
 
 if [[ "$RUN_MOCK_OTP_FLOW" == "true" ]]; then

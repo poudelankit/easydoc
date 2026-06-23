@@ -26,6 +26,8 @@ Provider mode checks can be enforced:
 API_BASE_URL=https://staging-api.easydocument.example \
 EXPECT_SMS_PROVIDER=real-sms-provider \
 EXPECT_PUSH_PROVIDER=firebase \
+EXPECT_SMS_PROVIDER_MODE=staging-real-provider \
+EXPECT_PUSH_PROVIDER_MODE=staging-real-provider \
 ./scripts/deployment-smoke-test.sh
 ```
 
@@ -36,6 +38,10 @@ For local or staging environments that intentionally use the local/mock OTP prov
 ```bash
 API_BASE_URL=http://localhost:3000 \
 RUN_MOCK_OTP_FLOW=true \
+EXPECT_SMS_PROVIDER=local-mock \
+EXPECT_SMS_PROVIDER_MODE=local-mock \
+EXPECT_PUSH_PROVIDER=placeholder \
+EXPECT_PUSH_PROVIDER_MODE=placeholder \
 ./scripts/deployment-smoke-test.sh
 ```
 

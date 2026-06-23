@@ -14,6 +14,7 @@ required=(
   MINIO_BUCKET_CHAT
   MINIO_BUCKET_EXPORTS
   SMS_PROVIDER
+  SMS_PROVIDER_ENDPOINT
   SMS_PROVIDER_API_KEY
   SMS_PROVIDER_SENDER_ID
   PUSH_PROVIDER
@@ -29,6 +30,7 @@ placeholder_values=(
   "replace-with-sms-provider-key"
   "replace-with-firebase-service-account-json"
   "replace-with-google-maps-key"
+  "https://sms-provider.example/send"
   "minioadmin"
   "minioadmin123"
   "easydoc_dev_password"
@@ -63,8 +65,8 @@ if [[ "${PUSH_PROVIDER:-}" != "firebase" ]]; then
   errors+=("PUSH_PROVIDER must be firebase for staging or production.")
 fi
 
-if [[ -z "${FIREBASE_SERVICE_ACCOUNT_JSON:-}" && -z "${FIREBASE_SERVICE_ACCOUNT_SECRET_NAME:-}" ]]; then
-  errors+=("FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_SERVICE_ACCOUNT_SECRET_NAME is required.")
+if [[ -z "${FIREBASE_SERVICE_ACCOUNT_JSON:-}" && -z "${FIREBASE_SERVICE_ACCOUNT_SECRET_NAME:-}" && -z "${FIREBASE_SERVICE_ACCOUNT_PATH:-}" ]]; then
+  errors+=("FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_SERVICE_ACCOUNT_PATH, or FIREBASE_SERVICE_ACCOUNT_SECRET_NAME is required.")
 fi
 
 if [[ "${CORS_ORIGIN:-}" == "*" ]]; then
