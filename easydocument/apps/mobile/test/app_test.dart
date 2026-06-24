@@ -1,9 +1,15 @@
 import 'package:easydocument_mobile/app_environment.dart';
 import 'package:easydocument_mobile/main.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('shows mobile shell with onboarding and task tabs', (tester) async {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  testWidgets('shows mobile shell with onboarding and task tabs',
+      (tester) async {
     await tester.pumpWidget(const EasyDocumentMobileApp());
 
     expect(find.text('EasyDocument'), findsOneWidget);

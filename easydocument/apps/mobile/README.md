@@ -56,6 +56,37 @@ Run locally:
 flutter run -d linux
 ```
 
+## Local Backend Demo Viewing
+
+Seed the local demo data from the repository root before launching Flutter:
+
+```bash
+./scripts/start-local-infra.sh
+DATABASE_URL=postgresql://easydoc:easydoc_dev_password@localhost:55432/easydocument ./scripts/validate-migrations.sh
+./scripts/seed-local-demo-data.sh
+```
+
+Start the backend on `localhost:3000`, then run the mobile shell:
+
+```bash
+flutter run -d linux \
+  --dart-define=API_BASE_URL=http://localhost:3000/v1 \
+  --dart-define=SOCKET_URL=http://localhost:3000
+```
+
+Use the OTP tab with the local mock OTP:
+
+- Customer: `+9779800000100`
+- Agent: `+9779800000200`
+- OTP: `123456`
+
+After login:
+
+- Customer tabs load assigned task detail, timeline, messages, submitted reviews, and notifications from the backend.
+- Agent tabs load nearby requests, assigned task detail, timeline, messages, received reviews, and notifications from the backend.
+
+For a physical phone, replace `localhost` with the LAN IP address of the machine running the backend.
+
 ## Android Setup
 
 Android platform support is included, but emulator/device testing requires the Android SDK.

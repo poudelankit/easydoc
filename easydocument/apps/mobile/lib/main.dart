@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'app_environment.dart';
+import 'demo_api_client.dart';
+import 'demo_backend_widgets.dart';
 
 void main() {
   validateMobileEnvironment(AppEnvironment.current);
@@ -13,6 +15,8 @@ class EasyDocumentMobileApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const environment = AppEnvironment.current;
+
     return MaterialApp(
       title: 'EasyDocument',
       debugShowCheckedModeBanner: false,
@@ -23,13 +27,20 @@ class EasyDocumentMobileApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const PhaseOneShell(),
+      home: PhaseOneShell(
+        api: DemoApiClient(environment: environment),
+      ),
     );
   }
 }
 
 class PhaseOneShell extends StatefulWidget {
-  const PhaseOneShell({super.key});
+  const PhaseOneShell({
+    required this.api,
+    super.key,
+  });
+
+  final DemoApiClient api;
 
   @override
   State<PhaseOneShell> createState() => _PhaseOneShellState();
@@ -37,16 +48,36 @@ class PhaseOneShell extends StatefulWidget {
 
 class _PhaseOneShellState extends State<PhaseOneShell> {
   int _tabIndex = 0;
+  DemoSession? _session;
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreSession();
+  }
 
   @override
   Widget build(BuildContext context) {
     final pages = <Widget>[
-      const OtpShellScreen(),
-      const CustomerProfileShellScreen(),
-      const AgentKycShellScreen(),
-      const CustomerTaskShellScreen(),
-      const AgentTaskShellScreen(),
-      const NotificationShellScreen(),
+      DemoOtpScreen(
+        api: widget.api,
+        session: _session,
+        onSessionChanged: _setSession,
+      ),
+      DemoCustomerAccountScreen(session: _session),
+      DemoAgentAccountScreen(session: _session),
+      DemoCustomerTasksScreen(
+        api: widget.api,
+        session: _session,
+      ),
+      DemoAgentTasksScreen(
+        api: widget.api,
+        session: _session,
+      ),
+      DemoNotificationsScreen(
+        api: widget.api,
+        session: _session,
+      ),
     ];
 
     return Scaffold(
@@ -97,6 +128,18 @@ class _PhaseOneShellState extends State<PhaseOneShell> {
       ),
     );
   }
+
+  Future<void> _restoreSession() async {
+    final restored = await widget.api.restoreSession();
+    if (!mounted) {
+      return;
+    }
+    setState(() => _session = restored);
+  }
+
+  void _setSession(DemoSession? session) {
+    setState(() => _session = session);
+  }
 }
 
 class OtpShellScreen extends StatelessWidget {
@@ -106,7 +149,8 @@ class OtpShellScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const _ShellPane(
       title: 'Phone OTP',
-      description: 'Request and verify a Nepal mobile OTP before customer or agent registration.',
+      description:
+          'Request and verify a Nepal mobile OTP before customer or agent registration.',
       children: [
         TextField(
           keyboardType: TextInputType.phone,
@@ -176,7 +220,8 @@ class AgentKycShellScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const _ShellPane(
       title: 'Agent KYC',
-      description: 'Collect identity, citizenship placeholders, permanent address, and permanent location.',
+      description:
+          'Collect identity, citizenship placeholders, permanent address, and permanent location.',
       children: [
         TextField(
           decoration: InputDecoration(
@@ -241,7 +286,8 @@ class CustomerTaskShellScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const _ShellPane(
       title: 'Customer Tasks',
-      description: 'Create a document service request and review the accepted agent details.',
+      description:
+          'Create a document service request and review the accepted agent details.',
       children: [
         CustomerCreateTaskScreen(),
         SizedBox(height: 24),
@@ -346,8 +392,11 @@ class CustomerTaskDetailScreen extends StatelessWidget {
     return const _TaskPanel(
       title: 'Task Detail',
       children: [
-        _ReadonlyLine(label: 'Task name', value: 'SITA CUSTOMER-CITIZENSHIP-CDAO'),
-        _ReadonlyLine(label: 'Status', value: 'ACCEPTED, DEAL_CONFIRMED, IN_PROGRESS, or later'),
+        _ReadonlyLine(
+            label: 'Task name', value: 'SITA CUSTOMER-CITIZENSHIP-CDAO'),
+        _ReadonlyLine(
+            label: 'Status',
+            value: 'ACCEPTED, DEAL_CONFIRMED, IN_PROGRESS, or later'),
         _ReadonlyLine(label: 'Assigned agent', value: 'Shown after acceptance'),
         _ReadonlyLine(label: 'Agent phone', value: 'Shown after acceptance'),
         ExpectedDeliveryDateDisplay(),
@@ -369,10 +418,22 @@ class CustomerTaskTimelineScreen extends StatelessWidget {
     return const _TaskPanel(
       title: 'Task Timeline',
       children: [
-        _TimelineStep(status: 'ACCEPTED', actor: 'Agent', note: 'Agent accepted the request'),
-        _TimelineStep(status: 'DEAL_CONFIRMED', actor: 'Customer', note: 'Customer started the deal'),
-        _TimelineStep(status: 'IN_PROGRESS', actor: 'Agent', note: 'Agent began office work'),
-        _TimelineStep(status: 'READY_FOR_DELIVERY', actor: 'Agent', note: 'Document ready for handoff'),
+        _TimelineStep(
+            status: 'ACCEPTED',
+            actor: 'Agent',
+            note: 'Agent accepted the request'),
+        _TimelineStep(
+            status: 'DEAL_CONFIRMED',
+            actor: 'Customer',
+            note: 'Customer started the deal'),
+        _TimelineStep(
+            status: 'IN_PROGRESS',
+            actor: 'Agent',
+            note: 'Agent began office work'),
+        _TimelineStep(
+            status: 'READY_FOR_DELIVERY',
+            actor: 'Agent',
+            note: 'Document ready for handoff'),
         SizedBox(height: 12),
         CompleteTaskButtonPlaceholder(),
       ],
@@ -387,7 +448,8 @@ class AgentTaskShellScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const _ShellPane(
       title: 'Agent Tasks',
-      description: 'Review nearby customer requests and inspect accepted task details.',
+      description:
+          'Review nearby customer requests and inspect accepted task details.',
       children: [
         AgentNearbyRequestsScreen(),
         SizedBox(height: 24),
@@ -438,8 +500,11 @@ class AgentAcceptedTaskDetailScreen extends StatelessWidget {
       children: [
         _ReadonlyLine(label: 'Customer', value: 'Shown after acceptance'),
         _ReadonlyLine(label: 'Customer phone', value: 'Shown after acceptance'),
-        _ReadonlyLine(label: 'Task status', value: 'DEAL_CONFIRMED or active progress status'),
-        _ReadonlyLine(label: 'Organization address', value: 'Babarmahal, Kathmandu'),
+        _ReadonlyLine(
+            label: 'Task status',
+            value: 'DEAL_CONFIRMED or active progress status'),
+        _ReadonlyLine(
+            label: 'Organization address', value: 'Babarmahal, Kathmandu'),
         ExpectedDeliveryDateDisplay(),
         SizedBox(height: 12),
         _ButtonRow(
@@ -503,7 +568,8 @@ class ExpectedDeliveryDateDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const _ReadonlyLine(label: 'Expected delivery', value: 'Set by assigned agent');
+    return const _ReadonlyLine(
+        label: 'Expected delivery', value: 'Set by assigned agent');
   }
 }
 
@@ -528,7 +594,8 @@ class LeaveReviewScreen extends StatelessWidget {
     return const _TaskPanel(
       title: 'Leave Review',
       children: [
-        _ReadonlyLine(label: 'Availability', value: 'Enabled after task completion'),
+        _ReadonlyLine(
+            label: 'Availability', value: 'Enabled after task completion'),
         RatingSelector(label: 'Overall'),
         SizedBox(height: 10),
         RatingSelector(label: 'Communication'),
@@ -606,8 +673,10 @@ class AgentReviewsScreen extends StatelessWidget {
       title: 'Agent Reviews',
       children: [
         _ReadonlyLine(label: 'Average rating', value: '4.7 overall'),
-        _ReadonlyLine(label: 'Completed tasks', value: 'Shown from reputation summary'),
-        _ReadonlyLine(label: 'Total reviews', value: 'Shown from reputation summary'),
+        _ReadonlyLine(
+            label: 'Completed tasks', value: 'Shown from reputation summary'),
+        _ReadonlyLine(
+            label: 'Total reviews', value: 'Shown from reputation summary'),
         SizedBox(height: 8),
         _ReviewSummaryLine(
           rating: '5',
@@ -629,7 +698,8 @@ class NotificationShellScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const _ShellPane(
       title: 'Notifications',
-      description: 'Review task, message, call, dispute, verification, and review updates.',
+      description:
+          'Review task, message, call, dispute, verification, and review updates.',
       children: [
         NotificationBadgePlaceholder(),
         SizedBox(height: 16),
@@ -715,7 +785,8 @@ class NotificationTilePlaceholder extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         child: ListTile(
-          leading: Icon(unread ? Icons.markunread_outlined : Icons.drafts_outlined),
+          leading:
+              Icon(unread ? Icons.markunread_outlined : Icons.drafts_outlined),
           title: Text(title),
           subtitle: Text(body),
           trailing: const IconButton(
@@ -816,7 +887,9 @@ class DisputeStatusPlaceholder extends StatelessWidget {
     return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _ReadonlyLine(label: 'Status', value: 'OPEN, UNDER_REVIEW, ACTION_REQUIRED, or RESOLVED'),
+        _ReadonlyLine(
+            label: 'Status',
+            value: 'OPEN, UNDER_REVIEW, ACTION_REQUIRED, or RESOLVED'),
         _ReadonlyLine(label: 'Opened by', value: 'Customer or assigned agent'),
         Wrap(
           spacing: 8,
@@ -888,8 +961,11 @@ class TaskCallControlsScreen extends StatelessWidget {
     return const _TaskPanel(
       title: 'Task Calls',
       children: [
-        _ReadonlyLine(label: 'Access', value: 'Customer and assigned agent only'),
-        _ReadonlyLine(label: 'Signaling', value: 'Socket.IO WebRTC offer, answer, and ICE events'),
+        _ReadonlyLine(
+            label: 'Access', value: 'Customer and assigned agent only'),
+        _ReadonlyLine(
+            label: 'Signaling',
+            value: 'Socket.IO WebRTC offer, answer, and ICE events'),
         SizedBox(height: 8),
         Wrap(
           spacing: 12,
@@ -959,7 +1035,8 @@ class ExternalPhoneCallButtonPlaceholder extends StatelessWidget {
 
     if (!launched && context.mounted) {
       messenger.showSnackBar(
-        const SnackBar(content: Text('Phone dialer is unavailable on this device')),
+        const SnackBar(
+            content: Text('Phone dialer is unavailable on this device')),
       );
     }
   }
@@ -1047,7 +1124,8 @@ class TaskChatScreen extends StatelessWidget {
       title: 'Task Chat',
       children: [
         _ReadonlyLine(label: 'Room', value: 'Created after task acceptance'),
-        _ReadonlyLine(label: 'Access', value: 'Customer and assigned agent only'),
+        _ReadonlyLine(
+            label: 'Access', value: 'Customer and assigned agent only'),
         SizedBox(height: 8),
         MessageListPlaceholder(),
         SizedBox(height: 12),
